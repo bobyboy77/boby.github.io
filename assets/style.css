@@ -83,10 +83,15 @@ a:hover { color: var(--text-dim); }
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.65), rgba(0,0,0,0.88)),
+    url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1920&q=80&auto=format') center/cover no-repeat fixed;
 }
 
 .auth-card {
-  background: var(--surface);
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 40px 32px;
@@ -96,10 +101,11 @@ a:hover { color: var(--text-dim); }
 }
 
 .auth-card h1 {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-align: center;
+  letter-spacing: 1px;
 }
 
 .auth-card .subtitle {
@@ -183,6 +189,41 @@ input:focus, select:focus, textarea:focus {
 
 .btn.small { padding: 6px 12px; font-size: 13px; }
 
+/* ===== Hero banner ===== */
+.hero-banner {
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(10,10,10,1)),
+    url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1920&q=80&auto=format') center 40%/cover no-repeat;
+  height: 160px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 24px 20px;
+}
+
+.hero-content h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ===== Week navigation ===== */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 12px;
+}
+
+.week-nav span {
+  font-size: 14px;
+  color: var(--text-dim);
+  flex: 1;
+  text-align: center;
+}
+
 /* ===== Page header ===== */
 .page-header {
   margin-bottom: 24px;
@@ -217,18 +258,18 @@ input:focus, select:focus, textarea:focus {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 20px;
   margin-bottom: 10px;
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: center;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
-.workout-card:hover { border-color: #3a3a3a; }
+.workout-card:hover { border-color: #3a3a3a; background: var(--surface-2); }
 
 .workout-card.registered {
-  border-color: var(--text-dim);
+  border-right: 3px solid var(--text-dim);
   background: var(--surface-2);
 }
 
