@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>פאנל מאמן</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Training</div>
+    <nav>
+      <a href="schedule.html">השבוע</a>
+      <a href="admin.html" class="active">פאנל מאמן</a>
+      <a href="#" id="logoutBtn">יציאה</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="page-header">
+      <h2>פאנל מאמן</h2>
+      <p>הוסף, ערוך וצפה במשתתפים</p>
+    </div>
+
+    <form class="admin-form" id="newWorkoutForm">
+      <h3>הוספת אימון חדש</h3>
+      <div class="field">
+        <label for="title">כותרת האימון</label>
+        <input type="text" id="title" required placeholder="למשל: HIIT בוקר" />
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="workout_date">תאריך</label>
+          <input type="date" id="workout_date" required />
+        </div>
+        <div class="field">
+          <label for="start_time">שעת התחלה</label>
+          <input type="time" id="start_time" required />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="duration_min">משך (דקות)</label>
+          <input type="number" id="duration_min" min="10" max="240" value="60" />
+        </div>
+        <div class="field">
+          <label for="max_participants">מקסימום משתתפים</label>
+          <input type="number" id="max_participants" min="1" max="50" value="10" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="notes">הערות (אופציונלי)</label>
+        <input type="text" id="notes" placeholder="ציוד נדרש, מיקום וכו׳" />
+      </div>
+      <button type="submit" class="btn">הוסף אימון</button>
+    </form>
+
+    <div class="page-header" style="margin-top:32px">
+      <h2>אימונים השבוע</h2>
+    </div>
+
+    <div id="adminList">
+      <div class="empty">טוען…</div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase.js"></script>
+  <script src="assets/admin.js"></script>
+</body>
+</html>
