@@ -1,7 +1,20 @@
 let selectedWorkoutId = null;
 let availableWorkouts = [];
+let anonUserId = null;
 
 (async () => {
+  // Sign out any existing session and sign in anonymously so we can read
+  // workouts (RLS requires authenticated) and register on submit.
+  await sb.auth.signOut();
+  const { data, error } = await sb.auth.signInAnonymously();
+  if (error || !data?.user) {
+    console.error(error);
+    document.getElementById('workoutPicker').innerHTML =
+      '<div class="empty">שגיאה בחיבור. ודא/י ש-Anonymous Sign-Ins פעיל ב-Supabase</div>';
+    return;
+  }
+  anonUserId = data.user.id;
+
   await loadAvailableWorkouts();
 
   document.getElementById('trialForm').addEventListener('submit', handleSubmit);
@@ -15,7 +28,13 @@ async function loadAvailableWorkouts() {
   const twoWeeksOut = new Date(today);
   twoWeeksOut.setDate(today.getDate() + 14);
 
-  const fmt = (d) => d.toISOString().slice(0, 10);
+  // Format as local YYYY-MM-DD (avoid UTC shift)
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
 
   const { data: workouts, error } = await sb
     .from('workouts')
@@ -104,26 +123,21 @@ async function handleSubmit(e) {
     return;
   }
 
-  const { data: signInData, error: signInError } = await sb.auth.signInAnonymously();
-  if (signInError) {
-    console.error(signInError);
-    toast('שגיאה בהרשמה. ודא/י שהאופציה Anonymous Sign-Ins פעילה ב-Supabase', 'error');
+  if (!anonUserId) {
+    toast('הסשן פג. רענן/י את הדף', 'error');
     btn.disabled = false;
     btn.textContent = 'קבע/י שיעור ניסיון';
     return;
   }
 
-  const userId = signInData.user.id;
-
   const { error: updateError } = await sb
     .from('profiles')
     .update(payload)
-    .eq('id', userId);
+    .eq('id', anonUserId);
 
   if (updateError) {
     console.error(updateError);
     toast('שגיאה בשמירת הפרטים', 'error');
-    await sb.auth.signOut();
     btn.disabled = false;
     btn.textContent = 'קבע/י שיעור ניסיון';
     return;
@@ -131,12 +145,11 @@ async function handleSubmit(e) {
 
   const { error: regError } = await sb
     .from('registrations')
-    .insert({ workout_id: selectedWorkoutId, user_id: userId });
+    .insert({ workout_id: selectedWorkoutId, user_id: anonUserId });
 
   if (regError) {
     console.error(regError);
     toast('שגיאה בהרשמה לאימון', 'error');
-    await sb.auth.signOut();
     btn.disabled = false;
     btn.textContent = 'קבע/י שיעור ניסיון';
     return;
