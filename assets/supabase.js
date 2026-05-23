@@ -57,11 +57,11 @@ function formatTime(t) {
 }
 
 // Returns YYYY-MM-DD for the Sunday of this week, and Saturday end of week.
-function weekRange() {
+function weekRange(offset = 0) {
   const now = new Date();
   const day = now.getDay(); // 0=Sun
   const start = new Date(now);
-  start.setDate(now.getDate() - day);
+  start.setDate(now.getDate() - day + offset * 7);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(start.getDate() + 6);

@@ -1,9 +1,12 @@
+let currentOffset = 0;
+let currentUserId;
+
 (async () => {
   const session = await requireAuth();
   if (!session) return;
 
-  const userId = session.user.id;
-  const profile = await getProfile(userId);
+  currentUserId = session.user.id;
+  const profile = await getProfile(currentUserId);
 
   if (profile?.is_admin) {
     const link = document.getElementById('adminLink');
@@ -16,15 +19,29 @@
     logout();
   });
 
-  const { start, end } = weekRange();
+  document.getElementById('prevWeek').addEventListener('click', () => {
+    currentOffset--;
+    refresh();
+  });
+
+  document.getElementById('nextWeek').addEventListener('click', () => {
+    currentOffset++;
+    refresh();
+  });
+
+  refresh();
+})();
+
+async function refresh() {
+  const { start, end } = weekRange(currentOffset);
   document.getElementById('weekRange').textContent =
     `${formatDate(start)} – ${formatDate(end)}`;
-
-  await renderSchedule(userId, start, end);
-})();
+  await renderSchedule(currentUserId, start, end);
+}
 
 async function renderSchedule(userId, start, end) {
   const list = document.getElementById('scheduleList');
+  list.innerHTML = '<div class="empty">טוען…</div>';
 
   const { data: workouts, error: wErr } = await sb
     .from('workouts')
@@ -41,7 +58,7 @@ async function renderSchedule(userId, start, end) {
   }
 
   if (!workouts.length) {
-    list.innerHTML = '<div class="empty">אין אימונים מתוכננים השבוע</div>';
+    list.innerHTML = '<div class="empty">אין אימונים מתוכננים בשבוע זה</div>';
     return;
   }
 
@@ -122,8 +139,7 @@ async function renderSchedule(userId, start, end) {
           }
           toast('נרשמת בהצלחה!', 'success');
         }
-        const { start, end } = weekRange();
-        await renderSchedule(userId, start, end);
+        await refresh();
       });
 
       actions.appendChild(btn);
