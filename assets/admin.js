@@ -39,8 +39,90 @@
     await renderAdminList();
   });
 
+  await renderTrialsList();
   await renderAdminList();
 })();
+
+async function renderTrialsList() {
+  const container = document.getElementById('trialsList');
+
+  const { data: trials, error } = await sb
+    .from('profiles')
+    .select('id, full_name, phone, email, trial_goal, trial_source, trial_status, created_at')
+    .eq('is_trial', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="empty">שגיאה בטעינת הטריאלים</div>';
+    console.error(error);
+    return;
+  }
+
+  if (!trials.length) {
+    container.innerHTML = '<div class="empty">אין טריאלים פעילים</div>';
+    return;
+  }
+
+  const ids = trials.map((t) => t.id);
+  const { data: regs } = await sb
+    .from('registrations')
+    .select('user_id, workouts(title, workout_date, start_time)')
+    .in('user_id', ids);
+
+  const regMap = {};
+  for (const r of regs || []) {
+    (regMap[r.user_id] ||= []).push(r);
+  }
+
+  container.innerHTML = '';
+  for (const t of trials) {
+    const bookings = regMap[t.id] || [];
+    const card = document.createElement('div');
+    card.className = 'trial-card';
+    card.innerHTML = `
+      <div class="trial-info">
+        <div class="title">${escapeHtml(t.full_name)}</div>
+        <div class="meta">
+          ${t.phone ? `<span>📞 <a href="tel:${escapeHtml(t.phone)}" style="color:inherit">${escapeHtml(t.phone)}</a></span>` : ''}
+          ${t.email ? `<span>✉️ <a href="mailto:${escapeHtml(t.email)}" style="color:inherit">${escapeHtml(t.email)}</a></span>` : ''}
+        </div>
+        ${t.trial_goal ? `<div class="meta" style="margin-top:6px"><strong>מטרה:</strong> ${escapeHtml(t.trial_goal)}</div>` : ''}
+        ${t.trial_source ? `<div class="meta" style="margin-top:2px"><strong>שמע/ה דרך:</strong> ${escapeHtml(t.trial_source)}</div>` : ''}
+        ${bookings.length ? `
+          <div class="meta" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+            <strong>נרשמ/ה ל:</strong>
+            ${bookings.map((b) => `${escapeHtml(b.workouts?.title || '?')} • ${formatDate(b.workouts?.workout_date)} • ${formatTime(b.workouts?.start_time)}`).join('<br>')}
+          </div>` : ''}
+      </div>
+      <div class="workout-actions">
+        <button class="btn small" data-action="convert">סמן כממיר ✓</button>
+        <button class="btn danger small" data-action="delete">מחק</button>
+      </div>
+    `;
+
+    card.querySelector('[data-action="convert"]').addEventListener('click', async () => {
+      const { error } = await sb
+        .from('profiles')
+        .update({ is_trial: false, trial_status: 'converted' })
+        .eq('id', t.id);
+      if (error) { toast('שגיאה בעדכון', 'error'); console.error(error); return; }
+      toast('סומן כממיר!', 'success');
+      await renderTrialsList();
+      await renderAdminList();
+    });
+
+    card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
+      if (!confirm(`למחוק את הטריאל "${t.full_name}"?`)) return;
+      const { error } = await sb.from('profiles').delete().eq('id', t.id);
+      if (error) { toast('שגיאה במחיקה', 'error'); console.error(error); return; }
+      toast('הטריאל נמחק', 'success');
+      await renderTrialsList();
+      await renderAdminList();
+    });
+
+    container.appendChild(card);
+  }
+}
 
 async function renderAdminList() {
   const list = document.getElementById('adminList');
@@ -66,7 +148,7 @@ async function renderAdminList() {
   const ids = workouts.map((w) => w.id);
   const { data: regs } = await sb
     .from('registrations')
-    .select('workout_id, user_id, profiles(full_name)')
+    .select('workout_id, user_id, profiles(full_name, is_trial, phone)')
     .in('workout_id', ids);
 
   const regMap = {};
@@ -98,7 +180,12 @@ async function renderAdminList() {
           ${participants.length ? `
             <div class="participants">
               <strong>משתתפים:</strong>
-              <ul>${participants.map((p) => `<li>• ${escapeHtml(p.profiles?.full_name || 'משתמש')}</li>`).join('')}</ul>
+              <ul>${participants.map((p) => {
+                const name = escapeHtml(p.profiles?.full_name || 'משתמש');
+                const badge = p.profiles?.is_trial ? ' <span class="trial-badge">🆕 טריאל</span>' : '';
+                const phone = p.profiles?.phone ? ` • <a href="tel:${escapeHtml(p.profiles.phone)}" style="color:inherit">${escapeHtml(p.profiles.phone)}</a>` : '';
+                return `<li>• ${name}${badge}${phone}</li>`;
+              }).join('')}</ul>
             </div>` : ''}
         </div>
         <div class="workout-actions">

@@ -123,7 +123,49 @@ create trigger on_auth_user_created
 
 **Authentication → Providers → Email** → כבה/י את `Enable Sign Ups`.
 
-## 7. דפלוי
+## 7. שיעורי ניסיון (טריאלים)
+
+האפליקציה תומכת בהזמנת שיעור ניסיון ללא הרשמה (טופס פתוח לכלל). זה דורש 2 שלבים:
+
+### 7.1 הוספת עמודות לטבלת profiles
+
+ב-**SQL Editor** הרץ/י:
+
+```sql
+alter table public.profiles
+  add column if not exists is_trial boolean default false,
+  add column if not exists phone text,
+  add column if not exists email text,
+  add column if not exists trial_goal text,
+  add column if not exists trial_source text,
+  add column if not exists trial_status text default 'pending';
+
+-- Update the trigger to handle anonymous users
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.profiles (id, full_name, is_trial)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(coalesce(new.email, ''), '@', 1), 'אורח'),
+    coalesce(new.is_anonymous, false)
+  );
+  return new;
+end; $$;
+```
+
+### 7.2 הפעלת Anonymous Sign-Ins
+
+בדשבורד של Supabase:
+1. **Authentication → Providers**
+2. גלול/י עד **Anonymous Sign-Ins**
+3. הפעל/י (Toggle On) ושמור/י
+
+זה מאפשר למתאמני טריאל להירשם בלי לפתוח חשבון.
+
+---
+
+## 8. דפלוי
 
 הקבצים כבר מוכנים ל-GitHub Pages. push לפעולה ראשית והאפליקציה תהיה זמינה ב-`https://USERNAME.github.io/`.
 
