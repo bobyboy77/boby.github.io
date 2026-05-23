@@ -1,8 +1,8 @@
 // ===== Supabase Configuration =====
 // Replace these with your Supabase project credentials.
 // Find them in your Supabase dashboard: Settings -> API
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://fwkskymkisontznlgpxb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3a3NreW1raXNvbnR6bmxncHhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1Mzk3ODMsImV4cCI6MjA5NTExNTc4M30.3AEyGYDG8K-Frp36xZNonvtgcXlsFjyn204P1Z7tTAI';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
