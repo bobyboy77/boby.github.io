@@ -1,85 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>התחברות • Training</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h1>Training</h1>
+      <p class="subtitle">התחבר/י כדי לראות את האימונים השבועיים</p>
 
-  <head>
-    <meta charset="UTF-8">
-    <title>Yoni Personal Site</title>
-  </head>
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">שם משתמש (אימייל)</label>
+          <input type="email" id="email" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">סיסמה</label>
+          <input type="password" id="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn full" id="submitBtn">כניסה</button>
+      </form>
+    </div>
+  </div>
 
-  <body>
-  <table cellspacing="20">
-    <td><img src="BOOBIES-modified.png"></td>
-    <td><h1>Chad ThunderCock</h1>
-    <p><em>Founder and CEO of <strong><a href="https://www.goodhousekeeping.com/life/pets/g26950009/best-rabbit-breeds/">CockSucking.inc</a></strong></em></p>
-    <p>I'm a Novel awarded porn star with over <strong>600</strong> bodies</p>
-    </td>
-  </table>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase.js"></script>
+  <script>
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) window.location.href = 'schedule.html';
+    })();
 
-    <hr size="3" noshade>
-    <h3>Books and Teaching</h3>
-    <ul>
-        <li><strong>The Art Of Giving A Fuck</strong></li>
-        <li><strong>Irresponsible:</strong> 69 Rules For Better Long Lasting Sex Session</li>
-        <li><strong>Why You Should Hate YourSelf:</strong> A Book For Angry Birds</li>
-    </ul>
-  <hr size="3" noshade>
-    <h3>Work Experience</h3>
-    <table cellspacing="10">
-      <thead>
-      <tr>
-        <th>Dates</th>
-        <th>Work</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr>
-        <td>2011</td>
-        <td>Head of a large terrorist organization</td>
-      </tr>
-      <tr>
-        <td>2020</td>
-        <td>A leading scientist at CoronaLabs</td>
-      </tr>
-      </tbody>
-      <tfoot>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'מתחבר…';
 
-      </tfoot>
-    </table>
-  <hr size="3" noshade>
-  <h3>Skills</h3>
-  <table>
-    <tr>
-      <td>
-        <table cellspacing="10">
-    <tr>
-      <td>Booty Development</td>
-      <td>⭐⭐⭐⭐⭐</td>
-    </tr>
-    <tr>
-      <td>Golden Showering</td>
-      <td>⭐⭐⭐⭐⭐</td>
-    </tr>
-  </table>
-      </td>
-      <td>
-           <table cellspacing="10">
-    <tr>
-      <td>E.D</td>
-      <td>⭐⭐⭐⭐⭐</td>
-    </tr>
-    <tr>
-      <td>FaceFucking</td>
-      <td>⭐⭐⭐⭐⭐</td>
-    </tr>
-  </table>
-      </td>
-    </tr>
-  </table>
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
 
-  <a href="hobbies.html">My Hobbies</a>
-    <br>
-    <p><a href="contact.html">Contact Me</a></p>
+      const { error } = await sb.auth.signInWithPassword({ email, password });
 
-  </body>
-
+      if (error) {
+        toast('שם משתמש או סיסמה שגויים', 'error');
+        btn.disabled = false;
+        btn.textContent = 'כניסה';
+        return;
+      }
+      window.location.href = 'schedule.html';
+    });
+  </script>
+</body>
 </html>
