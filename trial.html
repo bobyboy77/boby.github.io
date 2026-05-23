@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>שיעור ניסיון • Training</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Training</div>
+    <nav>
+      <a href="index.html">חזרה להתחברות</a>
+    </nav>
+  </header>
+
+  <div class="hero-banner">
+    <div class="hero-content">
+      <h1>שיעור ניסיון 🥊</h1>
+    </div>
+  </div>
+
+  <main class="container" style="max-width:640px">
+    <div id="formStep">
+      <p style="color:var(--text-dim);margin-bottom:24px;font-size:14px">
+        מלא/י את הפרטים, בחר/י אימון מהשבועות הקרובים, ונתראה!
+      </p>
+
+      <form class="admin-form" id="trialForm">
+        <div class="field">
+          <label for="full_name">שם מלא *</label>
+          <input type="text" id="full_name" required autocomplete="name" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="phone">טלפון *</label>
+            <input type="tel" id="phone" required autocomplete="tel" placeholder="050-1234567" />
+          </div>
+          <div class="field">
+            <label for="email">אימייל (אופציונלי)</label>
+            <input type="email" id="email" autocomplete="email" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="trial_goal">מה תרצה/י להשיג? (אופציונלי)</label>
+          <textarea id="trial_goal" rows="2" placeholder="להתחזק, לרדת במשקל, להתכונן לקרב..."></textarea>
+        </div>
+        <div class="field">
+          <label for="trial_source">מאיפה שמעת עלינו? (אופציונלי)</label>
+          <input type="text" id="trial_source" placeholder="חבר/ה, אינסטגרם, פרסום..." />
+        </div>
+
+        <div class="field" style="margin-top:24px">
+          <label>בחר/י אימון *</label>
+          <div id="workoutPicker">
+            <div class="empty">טוען אימונים…</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn full" id="submitBtn" disabled>קבע/י שיעור ניסיון</button>
+      </form>
+    </div>
+
+    <div id="successStep" style="display:none;text-align:center;padding:40px 16px">
+      <div style="font-size:56px;margin-bottom:16px">✅</div>
+      <h2 style="font-size:24px;margin-bottom:8px">הרשמתך התקבלה!</h2>
+      <p style="color:var(--text-dim);margin-bottom:24px" id="successDetails"></p>
+      <p style="color:var(--text-dim);font-size:14px">נחזור אליך בהקדם לאישור הפרטים.</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase.js"></script>
+  <script src="assets/trial.js"></script>
+</body>
+</html>

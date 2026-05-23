@@ -348,6 +348,83 @@ input:focus, select:focus, textarea:focus {
   margin-bottom: 16px;
 }
 
+/* ===== Trial badge & card ===== */
+.trial-badge {
+  display: inline-block;
+  background: #d97706;
+  color: #1a1a1a;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin: 0 4px;
+  letter-spacing: 0.3px;
+}
+
+.trials-section {
+  margin-bottom: 28px;
+}
+
+.trial-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: 3px solid #d97706;
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.trial-info .title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.trial-info .meta {
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ===== Trial booking - workout picker ===== */
+.workout-pick {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.workout-pick:hover { border-color: #3a3a3a; }
+.workout-pick.selected {
+  border-color: var(--text);
+  background: var(--surface-2);
+}
+.workout-pick input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.workout-pick-info .title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.workout-pick-info .meta {
+  font-size: 13px;
+  color: var(--text-dim);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 /* ===== Participant list (admin) ===== */
 .participants {
   margin-top: 8px;
