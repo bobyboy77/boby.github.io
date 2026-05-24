@@ -90,9 +90,16 @@ async function renderSchedule(userId, start, end) {
       const count = countMap[w.id] || 0;
       const isRegistered = myRegs.has(w.id);
       const isFull = w.max_participants && count >= w.max_participants;
+      const spotsLeft = w.max_participants ? w.max_participants - count : null;
+      const almostFull = !isFull && spotsLeft !== null && spotsLeft <= 3 && spotsLeft > 0;
+      const past = isPastWorkout(w);
 
       const card = document.createElement('div');
-      card.className = 'workout-card' + (isRegistered ? ' registered' : '');
+      card.className = 'workout-card'
+        + (isRegistered ? ' registered' : '')
+        + (almostFull ? ' almost-full' : '')
+        + (past ? ' past' : '');
+
       card.innerHTML = `
         <div class="workout-info">
           <div class="title">${escapeHtml(w.title)}</div>
@@ -101,6 +108,7 @@ async function renderSchedule(userId, start, end) {
             <span class="capacity ${isFull ? 'full' : ''}">
               ${count}${w.max_participants ? `/${w.max_participants}` : ''} נרשמו
             </span>
+            ${almostFull ? `<span class="almost-full-badge">⚠️ מקומות אחרונים!</span>` : ''}
           </div>
           ${w.notes ? `<div class="meta" style="margin-top:6px">${escapeHtml(w.notes)}</div>` : ''}
         </div>
@@ -110,13 +118,42 @@ async function renderSchedule(userId, start, end) {
       const actions = card.querySelector('.workout-actions');
       const btn = document.createElement('button');
       btn.className = 'btn small ' + (isRegistered ? 'danger' : '');
-      btn.textContent = isRegistered ? 'בטל הרשמה' : 'הירשם';
-      btn.disabled = !isRegistered && isFull;
-      if (!isRegistered && isFull) btn.textContent = 'מלא';
+
+      if (past) {
+        btn.textContent = isRegistered ? 'נכחת' : 'הסתיים';
+        btn.disabled = true;
+      } else if (isRegistered) {
+        const cancelable = canCancel(w);
+        btn.textContent = cancelable ? 'בטל הרשמה' : 'נעול לביטול';
+        if (!cancelable) btn.className = 'btn small ghost';
+      } else if (isFull) {
+        btn.textContent = 'מלא';
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'הירשם';
+      }
 
       btn.addEventListener('click', async () => {
+        if (isRegistered && !canCancel(w)) {
+          await confirmDialog({
+            title: 'לא ניתן לבטל',
+            message: `לא ניתן לבטל הרשמה פחות מ-${CANCEL_DEADLINE_HOURS} שעות לפני האימון. ליצירת קשר עם המאמן/ת.`,
+            confirmText: 'הבנתי',
+            cancelText: '',
+          });
+          return;
+        }
+
         btn.disabled = true;
         if (isRegistered) {
+          const confirmed = await confirmDialog({
+            title: 'ביטול הרשמה',
+            message: `לבטל את ההרשמה ל"${w.title}"?`,
+            confirmText: 'בטל הרשמה',
+            danger: true,
+          });
+          if (!confirmed) { btn.disabled = false; return; }
+
           const { error } = await sb
             .from('registrations')
             .delete()

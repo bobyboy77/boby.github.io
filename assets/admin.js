@@ -36,12 +36,67 @@
     e.target.reset();
     document.getElementById('duration_min').value = 60;
     document.getElementById('max_participants').value = 10;
+    await renderStats();
     await renderAdminList();
   });
 
+  await renderStats();
   await renderTrialsList();
   await renderAdminList();
 })();
+
+async function renderStats() {
+  const strip = document.getElementById('statsStrip');
+  if (!strip) return;
+
+  const { start, end } = weekRange();
+
+  // Week registrations
+  const { data: weekWorkouts } = await sb
+    .from('workouts')
+    .select('id, max_participants')
+    .gte('workout_date', start)
+    .lte('workout_date', end);
+
+  const weekIds = (weekWorkouts || []).map((w) => w.id);
+  let weekRegs = 0;
+  let fullCount = 0;
+  if (weekIds.length) {
+    const { data: regs } = await sb
+      .from('registrations')
+      .select('workout_id')
+      .in('workout_id', weekIds);
+    weekRegs = regs?.length || 0;
+    const countMap = {};
+    for (const r of regs || []) countMap[r.workout_id] = (countMap[r.workout_id] || 0) + 1;
+    for (const w of weekWorkouts) {
+      if (w.max_participants && (countMap[w.id] || 0) >= w.max_participants) fullCount++;
+    }
+  }
+
+  // Active trials
+  const { count: activeTrials } = await sb
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('is_trial', true);
+
+  // Conversions this month
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const { count: conversions } = await sb
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('trial_status', 'converted')
+    .gte('created_at', monthStart.toISOString());
+
+  strip.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${weekRegs}</div><div class="stat-label">הרשמות השבוע</div></div>
+    <div class="stat-card"><div class="stat-num">${activeTrials || 0}</div><div class="stat-label">טריאלים פעילים</div></div>
+    <div class="stat-card"><div class="stat-num">${conversions || 0}</div><div class="stat-label">המרות החודש</div></div>
+    <div class="stat-card"><div class="stat-num">${fullCount}</div><div class="stat-label">אימונים מלאים</div></div>
+  `;
+}
 
 async function renderTrialsList() {
   const container = document.getElementById('trialsList');
@@ -107,15 +162,32 @@ async function renderTrialsList() {
         .eq('id', t.id);
       if (error) { toast('שגיאה בעדכון', 'error'); console.error(error); return; }
       toast('סומן כממיר!', 'success');
+      await renderStats();
       await renderTrialsList();
       await renderAdminList();
     });
 
     card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-      if (!confirm(`למחוק את הטריאל "${t.full_name}"?`)) return;
-      const { error } = await sb.from('profiles').delete().eq('id', t.id);
-      if (error) { toast('שגיאה במחיקה', 'error'); console.error(error); return; }
+      const confirmed = await confirmDialog({
+        title: 'מחיקת טריאל',
+        message: `למחוק את הטריאל של ${t.full_name}? פעולה זו תמחק גם את ההרשמה שלו לאימון.`,
+        confirmText: 'מחק',
+        danger: true,
+      });
+      if (!confirmed) return;
+
+      // Delete registrations first, then the profile
+      const { error: regError } = await sb.from('registrations').delete().eq('user_id', t.id);
+      if (regError) { toast('שגיאה במחיקת ההרשמה', 'error'); console.error(regError); return; }
+
+      const { error: profileError } = await sb.from('profiles').delete().eq('id', t.id);
+      if (profileError) {
+        toast('שגיאה במחיקה. ודא/י שמדיניות מחיקה מוגדרת ב-Supabase', 'error');
+        console.error(profileError);
+        return;
+      }
       toast('הטריאל נמחק', 'success');
+      await renderStats();
       await renderTrialsList();
       await renderAdminList();
     });
@@ -190,34 +262,84 @@ async function renderAdminList() {
         </div>
         <div class="workout-actions">
           <button class="btn ghost small" data-action="edit">ערוך</button>
+          <button class="btn ghost small" data-action="duplicate">שכפל</button>
           <button class="btn danger small" data-action="delete">מחק</button>
         </div>
       `;
 
       card.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-        if (!confirm(`למחוק את "${w.title}"?`)) return;
+        const confirmed = await confirmDialog({
+          title: 'מחיקת אימון',
+          message: `למחוק את "${w.title}"? כל ההרשמות לאימון יימחקו.`,
+          confirmText: 'מחק',
+          danger: true,
+        });
+        if (!confirmed) return;
         const { error } = await sb.from('workouts').delete().eq('id', w.id);
         if (error) { toast('שגיאה במחיקה', 'error'); return; }
         toast('האימון נמחק', 'success');
+        await renderStats();
         await renderAdminList();
       });
 
       card.querySelector('[data-action="edit"]').addEventListener('click', async () => {
-        const newTitle = prompt('כותרת חדשה:', w.title);
-        if (newTitle === null) return;
-        const newTime = prompt('שעת התחלה (HH:MM):', formatTime(w.start_time));
-        if (newTime === null) return;
-        const newMax = prompt('מקסימום משתתפים:', w.max_participants || '');
-        if (newMax === null) return;
+        const result = await promptDialog({
+          title: 'עריכת אימון',
+          fields: [
+            { name: 'title', label: 'כותרת', value: w.title },
+            { name: 'workout_date', label: 'תאריך', type: 'date', value: w.workout_date },
+            { name: 'start_time', label: 'שעת התחלה', type: 'time', value: formatTime(w.start_time) },
+            { name: 'duration_min', label: 'משך (דקות)', type: 'number', value: w.duration_min || 60 },
+            { name: 'max_participants', label: 'מקסימום משתתפים', type: 'number', value: w.max_participants || 10 },
+            { name: 'notes', label: 'הערות', value: w.notes || '' },
+          ],
+        });
+        if (!result) return;
 
         const { error } = await sb.from('workouts').update({
-          title: newTitle.trim() || w.title,
-          start_time: newTime || w.start_time,
-          max_participants: parseInt(newMax) || null,
+          title: result.title.trim() || w.title,
+          workout_date: result.workout_date || w.workout_date,
+          start_time: result.start_time || w.start_time,
+          duration_min: parseInt(result.duration_min) || null,
+          max_participants: parseInt(result.max_participants) || null,
+          notes: result.notes.trim() || null,
         }).eq('id', w.id);
 
         if (error) { toast('שגיאה בעדכון', 'error'); return; }
         toast('עודכן', 'success');
+        await renderAdminList();
+      });
+
+      card.querySelector('[data-action="duplicate"]').addEventListener('click', async () => {
+        const result = await promptDialog({
+          title: `שכפול: ${w.title}`,
+          fields: [
+            { name: 'weeks', label: 'לכמה שבועות קדימה?', type: 'number', value: 4, min: 1, max: 26 },
+          ],
+          confirmText: 'שכפל',
+        });
+        if (!result) return;
+
+        const weeks = Math.max(1, Math.min(26, parseInt(result.weeks) || 4));
+        const baseDate = new Date(w.workout_date + 'T00:00:00');
+        const copies = [];
+        for (let i = 1; i <= weeks; i++) {
+          const d = new Date(baseDate);
+          d.setDate(d.getDate() + i * 7);
+          copies.push({
+            title: w.title,
+            workout_date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+            start_time: w.start_time,
+            duration_min: w.duration_min,
+            max_participants: w.max_participants,
+            notes: w.notes,
+          });
+        }
+
+        const { error } = await sb.from('workouts').insert(copies);
+        if (error) { toast('שגיאה בשכפול', 'error'); console.error(error); return; }
+        toast(`נוצרו ${weeks} עותקים`, 'success');
+        await renderStats();
         await renderAdminList();
       });
 

@@ -68,3 +68,113 @@ function weekRange(offset = 0) {
   const fmt = (d) => d.toISOString().slice(0, 10);
   return { start: fmt(start), end: fmt(end) };
 }
+
+// ===== Cancellation policy =====
+const CANCEL_DEADLINE_HOURS = 12;
+
+function workoutDateTime(workout) {
+  return new Date(`${workout.workout_date}T${workout.start_time}`);
+}
+
+function hoursUntilWorkout(workout) {
+  const diffMs = workoutDateTime(workout) - new Date();
+  return diffMs / (1000 * 60 * 60);
+}
+
+function canCancel(workout) {
+  return hoursUntilWorkout(workout) >= CANCEL_DEADLINE_HOURS;
+}
+
+function isPastWorkout(workout) {
+  return workoutDateTime(workout) < new Date();
+}
+
+// ===== Modal helpers =====
+function ensureModalRoot() {
+  let root = document.getElementById('modalRoot');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'modalRoot';
+    document.body.appendChild(root);
+  }
+  return root;
+}
+
+function confirmDialog({ title, message, confirmText = 'אישור', cancelText = 'ביטול', danger = false }) {
+  return new Promise((resolve) => {
+    const root = ensureModalRoot();
+    root.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-card">
+          <h3>${escapeModalHtml(title || '')}</h3>
+          ${message ? `<p class="modal-message">${escapeModalHtml(message)}</p>` : ''}
+          <div class="modal-actions">
+            <button class="btn ghost" data-act="cancel">${escapeModalHtml(cancelText)}</button>
+            <button class="btn ${danger ? 'danger-solid' : ''}" data-act="ok">${escapeModalHtml(confirmText)}</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = (result) => {
+      root.innerHTML = '';
+      resolve(result);
+    };
+    root.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false));
+    root.querySelector('[data-act="ok"]').addEventListener('click', () => close(true));
+    root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) close(false);
+    });
+  });
+}
+
+function promptDialog({ title, fields = [], confirmText = 'שמירה' }) {
+  return new Promise((resolve) => {
+    const root = ensureModalRoot();
+    const fieldsHtml = fields.map((f) => `
+      <div class="field">
+        <label>${escapeModalHtml(f.label)}</label>
+        <input type="${f.type || 'text'}" data-name="${escapeModalHtml(f.name)}"
+               value="${escapeModalHtml(f.value ?? '')}"
+               ${f.min !== undefined ? `min="${f.min}"` : ''}
+               ${f.max !== undefined ? `max="${f.max}"` : ''} />
+      </div>
+    `).join('');
+    root.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-card">
+          <h3>${escapeModalHtml(title || '')}</h3>
+          ${fieldsHtml}
+          <div class="modal-actions">
+            <button class="btn ghost" data-act="cancel">ביטול</button>
+            <button class="btn" data-act="ok">${escapeModalHtml(confirmText)}</button>
+          </div>
+        </div>
+      </div>
+    `;
+    const close = (result) => {
+      root.innerHTML = '';
+      resolve(result);
+    };
+    const collect = () => {
+      const result = {};
+      for (const f of fields) {
+        const input = root.querySelector(`input[data-name="${f.name}"]`);
+        result[f.name] = input ? input.value : '';
+      }
+      return result;
+    };
+    root.querySelector('[data-act="cancel"]').addEventListener('click', () => close(null));
+    root.querySelector('[data-act="ok"]').addEventListener('click', () => close(collect()));
+    root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) close(null);
+    });
+    const firstInput = root.querySelector('input');
+    if (firstInput) firstInput.focus();
+  });
+}
+
+function escapeModalHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}

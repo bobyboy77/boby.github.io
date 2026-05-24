@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>פרופיל • Training</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Training</div>
+    <nav>
+      <a href="schedule.html">השבוע</a>
+      <a href="my-workouts.html">האימונים שלי</a>
+      <a href="profile.html" class="active">פרופיל</a>
+      <a href="#" id="adminLink" style="display:none">פאנל מאמן</a>
+      <a href="#" id="logoutBtn">יציאה</a>
+    </nav>
+  </header>
+
+  <main class="container" style="max-width:520px">
+    <div class="page-header">
+      <h2>הפרופיל שלי</h2>
+      <p id="emailDisplay" style="color:var(--text-dim)"></p>
+    </div>
+
+    <form class="admin-form" id="profileForm">
+      <div class="field">
+        <label for="full_name">שם מלא</label>
+        <input type="text" id="full_name" required />
+      </div>
+      <div class="field">
+        <label for="phone">טלפון</label>
+        <input type="tel" id="phone" placeholder="050-1234567" />
+      </div>
+      <button type="submit" class="btn">שמירה</button>
+    </form>
+
+    <div class="admin-form" style="margin-top:24px">
+      <h3 style="font-size:16px;margin-bottom:16px">שינוי סיסמה</h3>
+      <form id="passwordForm">
+        <div class="field">
+          <label for="new_password">סיסמה חדשה</label>
+          <input type="password" id="new_password" minlength="6" required autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label for="confirm_password">אישור סיסמה</label>
+          <input type="password" id="confirm_password" minlength="6" required autocomplete="new-password" />
+        </div>
+        <button type="submit" class="btn ghost">שנה סיסמה</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase.js"></script>
+  <script src="assets/profile.js"></script>
+</body>
+</html>
