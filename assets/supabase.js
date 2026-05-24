@@ -103,13 +103,14 @@ function ensureModalRoot() {
 function confirmDialog({ title, message, confirmText = 'אישור', cancelText = 'ביטול', danger = false }) {
   return new Promise((resolve) => {
     const root = ensureModalRoot();
+    const hasCancel = !!cancelText;
     root.innerHTML = `
       <div class="modal-backdrop">
         <div class="modal-card">
           <h3>${escapeModalHtml(title || '')}</h3>
           ${message ? `<p class="modal-message">${escapeModalHtml(message)}</p>` : ''}
           <div class="modal-actions">
-            <button class="btn ghost" data-act="cancel">${escapeModalHtml(cancelText)}</button>
+            ${hasCancel ? `<button class="btn ghost" data-act="cancel">${escapeModalHtml(cancelText)}</button>` : ''}
             <button class="btn ${danger ? 'danger-solid' : ''}" data-act="ok">${escapeModalHtml(confirmText)}</button>
           </div>
         </div>
@@ -119,12 +120,69 @@ function confirmDialog({ title, message, confirmText = 'אישור', cancelText 
       root.innerHTML = '';
       resolve(result);
     };
-    root.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false));
+    if (hasCancel) {
+      root.querySelector('[data-act="cancel"]').addEventListener('click', () => close(false));
+      root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) close(false);
+      });
+    }
     root.querySelector('[data-act="ok"]').addEventListener('click', () => close(true));
-    root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal-backdrop')) close(false);
-    });
   });
+}
+
+// ===== Calendar export (.ics) =====
+function generateIcs(workout) {
+  const start = new Date(`${workout.workout_date}T${workout.start_time}`);
+  const durationMs = (workout.duration_min || 60) * 60 * 1000;
+  const end = new Date(start.getTime() + durationMs);
+
+  const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Training//HE',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${workout.id}@training.app`,
+    `DTSTAMP:${fmt(new Date())}`,
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:${icsEscape(workout.title)}`,
+  ];
+  if (workout.notes) lines.push(`DESCRIPTION:${icsEscape(workout.notes)}`);
+  lines.push(
+    'BEGIN:VALARM',
+    'TRIGGER:-PT24H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:תזכורת — אימון מחר',
+    'END:VALARM',
+    'BEGIN:VALARM',
+    'TRIGGER:-PT1H',
+    'ACTION:DISPLAY',
+    'DESCRIPTION:תזכורת — אימון בעוד שעה',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  );
+  return lines.join('\r\n');
+}
+
+function icsEscape(s) {
+  return String(s || '').replace(/[\\,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+}
+
+function downloadIcs(workout) {
+  const content = generateIcs(workout);
+  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(workout.title || 'workout').replace(/[^\w֐-׿]+/g, '_')}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 function promptDialog({ title, fields = [], confirmText = 'שמירה' }) {

@@ -174,6 +174,12 @@ async function handleSubmit(e) {
   document.getElementById('successDetails').textContent =
     `${chosenWorkout.title} • ${formatDate(chosenWorkout.workout_date)} • ${formatTime(chosenWorkout.start_time)}`;
 
+  const addToCalBtn = document.getElementById('addToCalBtn');
+  addToCalBtn.onclick = () => {
+    downloadIcs(chosenWorkout);
+    toast('הקובץ נוצר — פתח/י אותו ביומן שלך', 'success');
+  };
+
   document.getElementById('formStep').style.display = 'none';
   document.getElementById('successStep').style.display = 'block';
 
