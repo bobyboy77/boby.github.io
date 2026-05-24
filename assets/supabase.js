@@ -179,19 +179,6 @@ function icsEscape(s) {
   return String(s || '').replace(/[\\,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
 }
 
-function downloadIcs(workout) {
-  const content = generateIcs(workout);
-  const blob = new Blob([content], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `workout-${workout.workout_date}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
-}
-
 function googleCalendarUrl(workout) {
   const { start, end } = workoutCalendarDates(workout);
   const dates = `${icsTimestamp(start)}/${icsTimestamp(end)}`;
@@ -204,6 +191,20 @@ function googleCalendarUrl(workout) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+// Opens Apple Calendar directly via data URI (no file download on iOS/Mac).
+// On iOS Safari / macOS, this opens the Calendar app with the event ready to save.
+function openAppleCalendar(workout) {
+  const content = generateIcs(workout);
+  const dataUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(content);
+  const a = document.createElement('a');
+  a.href = dataUri;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 async function showCalendarOptions(workout) {
   const root = ensureModalRoot();
   root.innerHTML = `
@@ -214,7 +215,7 @@ async function showCalendarOptions(workout) {
         <p style="color:var(--text-mute);font-size:13px;margin-bottom:16px">כולל תזכורות אוטומטיות 24 שעות + שעה לפני האימון</p>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
           <button class="btn" data-cal-act="google">📅 Google Calendar</button>
-          <button class="btn ghost" data-cal-act="ics">⬇️ הורד קובץ (Apple / Outlook)</button>
+          <button class="btn ghost" data-cal-act="apple">🍎 Apple Calendar</button>
         </div>
         <div class="modal-actions">
           <button class="btn ghost" data-cal-act="cancel">סגירה</button>
@@ -228,9 +229,8 @@ async function showCalendarOptions(workout) {
     window.open(googleCalendarUrl(workout), '_blank');
     close();
   });
-  root.querySelector('[data-cal-act="ics"]').addEventListener('click', () => {
-    downloadIcs(workout);
-    toast('הקובץ ירד — פתח/י אותו כדי להוסיף ליומן', 'success');
+  root.querySelector('[data-cal-act="apple"]').addEventListener('click', () => {
+    openAppleCalendar(workout);
     close();
   });
   root.querySelector('[data-cal-act="cancel"]').addEventListener('click', close);
