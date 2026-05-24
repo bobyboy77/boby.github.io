@@ -176,16 +176,37 @@ async function renderTrialsList() {
       });
       if (!confirmed) return;
 
-      // Delete registrations first, then the profile
-      const { error: regError } = await sb.from('registrations').delete().eq('user_id', t.id);
+      // Delete registrations first (use .select() to verify rows actually deleted)
+      const { error: regError } = await sb
+        .from('registrations')
+        .delete()
+        .eq('user_id', t.id)
+        .select();
       if (regError) { toast('שגיאה במחיקת ההרשמה', 'error'); console.error(regError); return; }
 
-      const { error: profileError } = await sb.from('profiles').delete().eq('id', t.id);
+      // Delete profile and verify by requesting select()
+      const { data: deletedRows, error: profileError } = await sb
+        .from('profiles')
+        .delete()
+        .eq('id', t.id)
+        .select();
+
       if (profileError) {
-        toast('שגיאה במחיקה. ודא/י שמדיניות מחיקה מוגדרת ב-Supabase', 'error');
+        toast('שגיאה במחיקה: ' + profileError.message, 'error');
         console.error(profileError);
         return;
       }
+
+      if (!deletedRows || deletedRows.length === 0) {
+        await confirmDialog({
+          title: 'המחיקה נחסמה על-ידי Supabase',
+          message: 'נראה שמדיניות RLS למחיקת פרופילים עדיין לא הוגדרה. הרץ/י את ה-SQL מסעיף 7.3 ב-SETUP.md ונסה/י שוב.',
+          confirmText: 'הבנתי',
+          cancelText: '',
+        });
+        return;
+      }
+
       toast('הטריאל נמחק', 'success');
       await renderStats();
       await renderTrialsList();
