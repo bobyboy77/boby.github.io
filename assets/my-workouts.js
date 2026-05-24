@@ -76,6 +76,19 @@ function renderList(container, workouts, isPast) {
     `;
 
     if (!isPast) {
+      const actions = card.querySelector('.workout-actions');
+
+      // Add to calendar
+      const icsBtn = document.createElement('button');
+      icsBtn.className = 'btn small ghost';
+      icsBtn.innerHTML = '📅 הוסף ליומן';
+      icsBtn.addEventListener('click', () => {
+        downloadIcs(w);
+        toast('הקובץ נוצר — פתח/י אותו ביומן שלך', 'success');
+      });
+      actions.appendChild(icsBtn);
+
+      // Cancel
       const btn = document.createElement('button');
       const cancelable = canCancel(w);
       btn.className = 'btn small ' + (cancelable ? 'danger' : 'ghost');
@@ -115,7 +128,7 @@ function renderList(container, workouts, isPast) {
         toast('ההרשמה בוטלה', 'success');
         await renderMyWorkouts();
       });
-      card.querySelector('.workout-actions').appendChild(btn);
+      actions.appendChild(btn);
     }
 
     container.appendChild(card);
