@@ -83,8 +83,7 @@ function renderList(container, workouts, isPast) {
       icsBtn.className = 'btn small ghost';
       icsBtn.innerHTML = '📅 הוסף ליומן';
       icsBtn.addEventListener('click', () => {
-        downloadIcs(w);
-        toast('הקובץ נוצר — פתח/י אותו ביומן שלך', 'success');
+        showCalendarOptions(w);
       });
       actions.appendChild(icsBtn);
 

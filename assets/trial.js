@@ -176,8 +176,7 @@ async function handleSubmit(e) {
 
   const addToCalBtn = document.getElementById('addToCalBtn');
   addToCalBtn.onclick = () => {
-    downloadIcs(chosenWorkout);
-    toast('הקובץ נוצר — פתח/י אותו ביומן שלך', 'success');
+    showCalendarOptions(chosenWorkout);
   };
 
   document.getElementById('formStep').style.display = 'none';

@@ -236,8 +236,7 @@ function renderMiniCard(w, userId, countMap, myRegs) {
     icsBtn.title = 'הוסף ליומן';
     icsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      downloadIcs(w);
-      toast('הקובץ נוצר — פתח/י אותו ביומן שלך', 'success');
+      showCalendarOptions(w);
     });
     actions.appendChild(icsBtn);
   }
