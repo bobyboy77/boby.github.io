@@ -130,6 +130,21 @@ async function handleSubmit(e) {
     return;
   }
 
+  // Prevent duplicate trial registrations from the same phone
+  const { data: existing } = await sb
+    .from('profiles')
+    .select('id')
+    .eq('phone', payload.phone)
+    .eq('is_trial', true)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    toast('מספר טלפון זה כבר רשום לשיעור ניסיון. ליצירת קשר עם המאמן/ת.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'קבע/י שיעור ניסיון';
+    return;
+  }
+
   const { error: updateError } = await sb
     .from('profiles')
     .update(payload)

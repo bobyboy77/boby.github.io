@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>אימונים השבוע</title>
+  <title>האימונים שלי • Training</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,34 +13,33 @@
   <header class="topbar">
     <div class="brand">Training</div>
     <nav>
-      <a href="schedule.html" class="active">השבוע</a>
-      <a href="my-workouts.html">האימונים שלי</a>
+      <a href="schedule.html">השבוע</a>
+      <a href="my-workouts.html" class="active">האימונים שלי</a>
       <a href="profile.html">פרופיל</a>
       <a href="#" id="adminLink" style="display:none">פאנל מאמן</a>
       <a href="#" id="logoutBtn">יציאה</a>
     </nav>
   </header>
 
-  <div class="hero-banner">
-    <div class="hero-content">
-      <h1>האימונים השבוע</h1>
-    </div>
-  </div>
-
   <main class="container">
-    <div class="week-nav">
-      <button class="btn ghost small" id="prevWeek">‹ שבוע קודם</button>
-      <span id="weekRange"></span>
-      <button class="btn ghost small" id="nextWeek">שבוע הבא ›</button>
+    <div class="page-header">
+      <h2>האימונים שלי</h2>
+      <p>כל ההרשמות שלך — קרובות ועברו</p>
     </div>
 
-    <div id="scheduleList">
-      <div class="empty">טוען…</div>
+    <div id="upcomingSection">
+      <h3 class="day-title">אימונים קרובים</h3>
+      <div id="upcomingList"><div class="empty">טוען…</div></div>
+    </div>
+
+    <div id="pastSection" style="margin-top:32px">
+      <h3 class="day-title">אימונים שעברו</h3>
+      <div id="pastList"></div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/supabase.js"></script>
-  <script src="assets/schedule.js"></script>
+  <script src="assets/my-workouts.js"></script>
 </body>
 </html>

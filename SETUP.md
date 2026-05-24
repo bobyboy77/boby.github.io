@@ -165,6 +165,29 @@ end; $$;
 
 ---
 
+## 7.3 הרשאת מאמן למחיקת טריאלים
+
+לצורך כפתור "מחק" של טריאל בפאנל המאמן:
+
+```sql
+create policy if not exists "profiles_admin_delete" on public.profiles
+  for delete using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
+create policy if not exists "regs_admin_delete" on public.registrations
+  for delete using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
+create policy if not exists "profiles_admin_update" on public.profiles
+  for update using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+```
+
+---
+
 ## 8. דפלוי
 
 הקבצים כבר מוכנים ל-GitHub Pages. push לפעולה ראשית והאפליקציה תהיה זמינה ב-`https://USERNAME.github.io/`.
