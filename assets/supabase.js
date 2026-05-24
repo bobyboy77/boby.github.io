@@ -130,13 +130,20 @@ function confirmDialog({ title, message, confirmText = 'אישור', cancelText 
   });
 }
 
-// ===== Calendar export (.ics) =====
-function generateIcs(workout) {
+// ===== Calendar export (.ics + Google Calendar URL) =====
+function workoutCalendarDates(workout) {
   const start = new Date(`${workout.workout_date}T${workout.start_time}`);
   const durationMs = (workout.duration_min || 60) * 60 * 1000;
   const end = new Date(start.getTime() + durationMs);
+  return { start, end };
+}
 
-  const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+function icsTimestamp(d) {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function generateIcs(workout) {
+  const { start, end } = workoutCalendarDates(workout);
 
   const lines = [
     'BEGIN:VCALENDAR',
@@ -145,9 +152,9 @@ function generateIcs(workout) {
     'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
     `UID:${workout.id}@training.app`,
-    `DTSTAMP:${fmt(new Date())}`,
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
+    `DTSTAMP:${icsTimestamp(new Date())}`,
+    `DTSTART:${icsTimestamp(start)}`,
+    `DTEND:${icsTimestamp(end)}`,
     `SUMMARY:${icsEscape(workout.title)}`,
   ];
   if (workout.notes) lines.push(`DESCRIPTION:${icsEscape(workout.notes)}`);
@@ -155,12 +162,12 @@ function generateIcs(workout) {
     'BEGIN:VALARM',
     'TRIGGER:-PT24H',
     'ACTION:DISPLAY',
-    'DESCRIPTION:תזכורת — אימון מחר',
+    'DESCRIPTION:תזכורת לאימון מחר',
     'END:VALARM',
     'BEGIN:VALARM',
     'TRIGGER:-PT1H',
     'ACTION:DISPLAY',
-    'DESCRIPTION:תזכורת — אימון בעוד שעה',
+    'DESCRIPTION:תזכורת לאימון בעוד שעה',
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
@@ -178,11 +185,58 @@ function downloadIcs(workout) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${(workout.title || 'workout').replace(/[^\w֐-׿]+/g, '_')}.ics`;
+  a.download = `workout-${workout.workout_date}.ics`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
+function googleCalendarUrl(workout) {
+  const { start, end } = workoutCalendarDates(workout);
+  const dates = `${icsTimestamp(start)}/${icsTimestamp(end)}`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: workout.title || 'אימון',
+    dates: dates,
+  });
+  if (workout.notes) params.set('details', workout.notes);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+async function showCalendarOptions(workout) {
+  const root = ensureModalRoot();
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>הוסף ליומן</h3>
+        <p class="modal-message">${escapeModalHtml(workout.title)} • ${escapeModalHtml(formatDate(workout.workout_date))} ${escapeModalHtml(formatTime(workout.start_time))}</p>
+        <p style="color:var(--text-mute);font-size:13px;margin-bottom:16px">כולל תזכורות אוטומטיות 24 שעות + שעה לפני האימון</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <button class="btn" data-cal-act="google">📅 Google Calendar</button>
+          <button class="btn ghost" data-cal-act="ics">⬇️ הורד קובץ (Apple / Outlook)</button>
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" data-cal-act="cancel">סגירה</button>
+        </div>
+      </div>
+    </div>
+  `;
+  const close = () => { root.innerHTML = ''; };
+
+  root.querySelector('[data-cal-act="google"]').addEventListener('click', () => {
+    window.open(googleCalendarUrl(workout), '_blank');
+    close();
+  });
+  root.querySelector('[data-cal-act="ics"]').addEventListener('click', () => {
+    downloadIcs(workout);
+    toast('הקובץ ירד — פתח/י אותו כדי להוסיף ליומן', 'success');
+    close();
+  });
+  root.querySelector('[data-cal-act="cancel"]').addEventListener('click', close);
+  root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-backdrop')) close();
+  });
 }
 
 function promptDialog({ title, fields = [], confirmText = 'שמירה' }) {
