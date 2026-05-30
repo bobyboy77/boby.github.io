@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>אימונים השבוע</title>
+  <title>תמחור • Training</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,35 +13,33 @@
   <header class="topbar">
     <a href="schedule.html" class="brand">Training</a>
     <nav>
-      <a href="schedule.html" class="active">השבוע</a>
+      <a href="schedule.html">השבוע</a>
       <a href="my-workouts.html">האימונים שלי</a>
-      <a href="pricing.html">תמחור</a>
       <a href="profile.html">פרופיל</a>
       <a href="#" id="adminLink" style="display:none">פאנל מאמן</a>
       <a href="#" id="logoutBtn">יציאה</a>
     </nav>
   </header>
 
-  <div class="hero-banner">
-    <div class="hero-content">
-      <h1>האימונים השבוע</h1>
-    </div>
-  </div>
-
-  <main class="container">
-    <div class="week-nav">
-      <button class="btn ghost small" id="prevWeek">‹ שבוע קודם</button>
-      <span id="weekRange"></span>
-      <button class="btn ghost small" id="nextWeek">שבוע הבא ›</button>
+  <main class="container" style="max-width:640px">
+    <div class="page-header">
+      <h2>רכישת כניסות</h2>
+      <p id="subStatus" style="color:var(--text-dim)"></p>
     </div>
 
-    <div id="scheduleList">
-      <div class="empty">טוען…</div>
+    <div id="productsList"></div>
+
+    <div style="margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-dim);font-size:13px;line-height:1.6">
+      <strong>איך זה עובד?</strong><br/>
+      1. בוחר/ים מנוי ולוחצים "רכישה".<br/>
+      2. נפתח חלון עם הסכום ומספר הביט של המאמן/ת.<br/>
+      3. שולחים את הסכום ב-Bit, ולוחצים "שילמתי".<br/>
+      4. המאמן/ת מאשר/ת — הכניסות נטענות אוטומטית לחשבון.
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/supabase.js"></script>
-  <script src="assets/schedule.js"></script>
+  <script src="assets/pricing.js"></script>
 </body>
 </html>

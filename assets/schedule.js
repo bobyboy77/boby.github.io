@@ -1,14 +1,15 @@
 let currentOffset = 0;
 let currentUserId;
+let currentProfile;
 
 (async () => {
   const session = await requireAuth();
   if (!session) return;
 
   currentUserId = session.user.id;
-  const profile = await getProfile(currentUserId);
+  currentProfile = await getProfile(currentUserId);
 
-  if (profile?.is_admin) {
+  if (currentProfile?.is_admin) {
     const link = document.getElementById('adminLink');
     link.style.display = '';
     link.href = 'admin.html';
@@ -33,6 +34,7 @@ let currentUserId;
 })();
 
 async function refresh() {
+  currentProfile = await getProfile(currentUserId);
   const { start, end } = weekRange(currentOffset);
   document.getElementById('weekRange').textContent =
     `${formatDate(start)} – ${formatDate(end)}`;
@@ -139,13 +141,15 @@ function renderMiniCard(w, userId, countMap, myRegs) {
   const spotsLeft = w.max_participants ? w.max_participants - count : null;
   const almostFull = !isFull && spotsLeft !== null && spotsLeft <= 3 && spotsLeft > 0;
   const past = isPastWorkout(w);
+  const isAdmin = !!currentProfile?.is_admin;
 
   const card = document.createElement('div');
   card.className = 'workout-mini'
     + (isRegistered ? ' registered' : '')
     + (almostFull ? ' almost-full' : '')
     + (isFull && !isRegistered ? ' full' : '')
-    + (past ? ' past' : '');
+    + (past ? ' past' : '')
+    + (isAdmin ? ' clickable' : '');
 
   card.innerHTML = `
     <div class="mini-time">${formatTime(w.start_time)}</div>
@@ -158,6 +162,14 @@ function renderMiniCard(w, userId, countMap, myRegs) {
     ${w.notes ? `<div class="mini-notes">${escapeHtml(w.notes)}</div>` : ''}
     <div class="mini-actions"></div>
   `;
+
+  if (isAdmin) {
+    card.addEventListener('click', (e) => {
+      // Don't open modal when clicking action buttons
+      if (e.target.closest('.mini-actions')) return;
+      showWorkoutDetails(w, { isAdmin: true, onChange: refresh });
+    });
+  }
 
   const actions = card.querySelector('.mini-actions');
 
@@ -180,7 +192,9 @@ function renderMiniCard(w, userId, countMap, myRegs) {
     btn.textContent = 'הירשם';
   }
 
-  btn.addEventListener('click', async () => {
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+
     if (isRegistered && !canCancel(w)) {
       await confirmDialog({
         title: 'לא ניתן לבטל',
@@ -189,6 +203,20 @@ function renderMiniCard(w, userId, countMap, myRegs) {
         cancelText: '',
       });
       return;
+    }
+
+    if (!isRegistered && !past && !isFull && !isAdmin) {
+      // Check subscription before registering (admin bypasses check)
+      if (!subscriptionIsActive(currentProfile)) {
+        const goToPricing = await confirmDialog({
+          title: 'אין כניסות פעילות',
+          message: 'הכרטיסייה שלך פגה או שאין כניסות. רוצה לרכוש כניסות חדשות?',
+          confirmText: 'רכישה',
+          cancelText: 'לא עכשיו',
+        });
+        if (goToPricing) window.location.href = 'pricing.html';
+        return;
+      }
     }
 
     btn.disabled = true;
@@ -201,6 +229,14 @@ function renderMiniCard(w, userId, countMap, myRegs) {
       });
       if (!confirmed) { btn.disabled = false; return; }
 
+      // Look up the registration row to see if a credit was consumed
+      const { data: regRow } = await sb
+        .from('registrations')
+        .select('credit_consumed')
+        .eq('workout_id', w.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
       const { error } = await sb
         .from('registrations')
         .delete()
@@ -211,13 +247,36 @@ function renderMiniCard(w, userId, countMap, myRegs) {
         btn.disabled = false;
         return;
       }
-      toast('ההרשמה בוטלה', 'success');
+
+      if (regRow?.credit_consumed) {
+        await refundEntry(userId);
+      }
+      toast('ההרשמה בוטלה' + (regRow?.credit_consumed ? ' • כניסה הוחזרה' : ''), 'success');
     } else {
+      // Try to consume an entry (admin bypasses)
+      let creditConsumed = false;
+      if (!isAdmin) {
+        const ok = await consumeEntry(userId);
+        if (!ok) {
+          const goToPricing = await confirmDialog({
+            title: 'לא ניתן להירשם',
+            message: 'אין כניסות בכרטיסייה. רוצה לרכוש?',
+            confirmText: 'רכישה',
+            cancelText: 'לא עכשיו',
+          });
+          btn.disabled = false;
+          if (goToPricing) window.location.href = 'pricing.html';
+          return;
+        }
+        creditConsumed = true;
+      }
+
       const { error } = await sb
         .from('registrations')
-        .insert({ workout_id: w.id, user_id: userId });
+        .insert({ workout_id: w.id, user_id: userId, credit_consumed: creditConsumed });
       if (error) {
         toast('שגיאה בהרשמה', 'error');
+        if (creditConsumed) await refundEntry(userId);
         btn.disabled = false;
         return;
       }

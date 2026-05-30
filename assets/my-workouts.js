@@ -27,7 +27,7 @@ async function renderMyWorkouts() {
 
   const { data: regs, error } = await sb
     .from('registrations')
-    .select('id, workout_id, workouts(id, title, workout_date, start_time, duration_min, max_participants, notes)')
+    .select('id, workout_id, credit_consumed, workouts(id, title, workout_date, start_time, duration_min, max_participants, notes)')
     .eq('user_id', currentUserId);
 
   if (error) {
@@ -36,31 +36,31 @@ async function renderMyWorkouts() {
     return;
   }
 
-  const workouts = (regs || [])
+  const items = (regs || [])
     .filter((r) => r.workouts)
-    .map((r) => r.workouts);
+    .map((r) => ({ workout: r.workouts, creditConsumed: r.credit_consumed }));
 
-  workouts.sort((a, b) => {
-    const da = new Date(`${a.workout_date}T${a.start_time}`);
-    const db = new Date(`${b.workout_date}T${b.start_time}`);
+  items.sort((a, b) => {
+    const da = new Date(`${a.workout.workout_date}T${a.workout.start_time}`);
+    const db = new Date(`${b.workout.workout_date}T${b.workout.start_time}`);
     return da - db;
   });
 
-  const upcoming = workouts.filter((w) => !isPastWorkout(w));
-  const past = workouts.filter((w) => isPastWorkout(w)).reverse();
+  const upcoming = items.filter((i) => !isPastWorkout(i.workout));
+  const past = items.filter((i) => isPastWorkout(i.workout)).reverse();
 
   renderList(upcomingList, upcoming, false);
   renderList(pastList, past, true);
 }
 
-function renderList(container, workouts, isPast) {
-  if (!workouts.length) {
+function renderList(container, items, isPast) {
+  if (!items.length) {
     container.innerHTML = `<div class="empty">${isPast ? 'אין אימונים שעברו' : 'אינך רשום/ה לאימונים קרובים'}</div>`;
     return;
   }
 
   container.innerHTML = '';
-  for (const w of workouts) {
+  for (const { workout: w, creditConsumed } of items) {
     const card = document.createElement('div');
     card.className = 'workout-card registered' + (isPast ? ' past' : '');
     card.innerHTML = `
@@ -124,7 +124,8 @@ function renderList(container, workouts, isPast) {
           btn.disabled = false;
           return;
         }
-        toast('ההרשמה בוטלה', 'success');
+        if (creditConsumed) await refundEntry(currentUserId);
+        toast('ההרשמה בוטלה' + (creditConsumed ? ' • כניסה הוחזרה' : ''), 'success');
         await renderMyWorkouts();
       });
       actions.appendChild(btn);

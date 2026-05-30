@@ -72,6 +72,66 @@ function weekRange(offset = 0) {
 // ===== Cancellation policy =====
 const CANCEL_DEADLINE_HOURS = 12;
 
+// ===== Subscription products =====
+// Update BIT_PHONE to your phone number used in the Bit app.
+const BIT_PHONE = '050-1234567';
+
+const PRODUCTS = {
+  card_10: {
+    key: 'card_10',
+    label: 'כרטיסיית 10 כניסות',
+    entries: 10,
+    validMonths: 3,
+    price: 700,
+  },
+  single: {
+    key: 'single',
+    label: 'שיעור בודד',
+    entries: 1,
+    validMonths: 1,
+    price: 80,
+  },
+};
+
+function subscriptionStatusText(profile) {
+  if (!profile || profile.subscription_type === 'none' || !profile.subscription_type) {
+    return 'אין מנוי פעיל';
+  }
+  const product = PRODUCTS[profile.subscription_type];
+  const label = product?.label || profile.subscription_type;
+  const entries = profile.entries_remaining ?? 0;
+  const expires = profile.subscription_expires_at;
+  let text = `${label} • ${entries} כניסות`;
+  if (expires) {
+    const d = new Date(expires + 'T00:00:00');
+    const today = new Date();
+    const expired = d < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    text += ` • ${expired ? 'פג ב-' : 'בתוקף עד '}${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+  }
+  return text;
+}
+
+function subscriptionIsActive(profile) {
+  if (!profile) return false;
+  if ((profile.entries_remaining ?? 0) <= 0) return false;
+  if (profile.subscription_expires_at) {
+    const exp = new Date(profile.subscription_expires_at + 'T23:59:59');
+    if (exp < new Date()) return false;
+  }
+  return true;
+}
+
+async function consumeEntry(userId) {
+  const { data, error } = await sb.rpc('consume_entry', { p_user: userId });
+  if (error) { console.error('consume_entry', error); return false; }
+  return !!data;
+}
+
+async function refundEntry(userId) {
+  const { error } = await sb.rpc('refund_entry', { p_user: userId });
+  if (error) console.error('refund_entry', error);
+}
+
 function workoutDateTime(workout) {
   return new Date(`${workout.workout_date}T${workout.start_time}`);
 }
@@ -289,4 +349,155 @@ function escapeModalHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+}
+
+// ===== Workout details modal (used by trainees + admin) =====
+async function showWorkoutDetails(workout, options = {}) {
+  const { isAdmin = false, onChange } = options;
+  const root = ensureModalRoot();
+
+  const { data: regs } = await sb
+    .from('registrations')
+    .select('id, user_id, attendance, profiles(full_name, phone, is_trial, subscription_type, entries_remaining)')
+    .eq('workout_id', workout.id);
+
+  const participants = regs || [];
+  const count = participants.length;
+
+  let participantsHtml;
+  if (isAdmin) {
+    participantsHtml = participants.length ? participants.map((p) => {
+      const pr = p.profiles || {};
+      const name = escapeModalHtml(pr.full_name || 'משתמש');
+      const phone = pr.phone ? `<a href="tel:${escapeModalHtml(pr.phone)}" style="color:inherit;text-decoration:underline">${escapeModalHtml(pr.phone)}</a>` : '';
+      const trial = pr.is_trial ? '<span class="trial-badge">🆕 טריאל</span>' : '';
+      const sub = pr.subscription_type && pr.subscription_type !== 'none'
+        ? `<span class="dim" style="font-size:11px">${escapeModalHtml(PRODUCTS[pr.subscription_type]?.label || pr.subscription_type)} • ${pr.entries_remaining ?? 0} כניסות</span>`
+        : '';
+      const attended = p.attendance === 'attended';
+      const noShow = p.attendance === 'no_show';
+      return `
+        <div class="participant-row">
+          <div class="participant-info">
+            <div>${name} ${trial}</div>
+            <div style="font-size:12px;color:var(--text-dim)">${phone}</div>
+            ${sub ? `<div>${sub}</div>` : ''}
+          </div>
+          <div class="participant-actions">
+            <button class="btn small ${attended ? 'success-solid' : 'ghost'}" data-att="attended" data-reg="${p.id}">✓ הגיע</button>
+            <button class="btn small ${noShow ? 'danger-solid' : 'ghost'}" data-att="no_show" data-reg="${p.id}">✗ לא הגיע</button>
+          </div>
+        </div>
+      `;
+    }).join('') : '<div class="empty" style="padding:24px 0">אין נרשמים</div>';
+  } else {
+    participantsHtml = `<p class="modal-message">נרשמו: ${count}${workout.max_participants ? `/${workout.max_participants}` : ''}</p>`;
+  }
+
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-card" style="max-width:520px">
+        <h3>${escapeModalHtml(workout.title)}</h3>
+        <p class="modal-message" style="margin-bottom:12px">
+          ${escapeModalHtml(formatDate(workout.workout_date))} • ${escapeModalHtml(formatTime(workout.start_time))}
+          ${workout.duration_min ? ` • ${workout.duration_min} דק׳` : ''}
+        </p>
+        ${workout.notes ? `<p class="modal-message" style="font-style:italic">${escapeModalHtml(workout.notes)}</p>` : ''}
+        ${isAdmin ? `<h4 style="font-size:14px;margin:16px 0 8px;color:var(--text-dim)">משתתפים (${count}${workout.max_participants ? `/${workout.max_participants}` : ''})</h4>` : ''}
+        <div class="participants-list">${participantsHtml}</div>
+        <div class="modal-actions" style="margin-top:20px">
+          <button class="btn ghost" data-act="close">סגירה</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+
+  root.querySelector('[data-act="close"]').addEventListener('click', close);
+  root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-backdrop')) close();
+  });
+
+  if (isAdmin) {
+    root.querySelectorAll('[data-att]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const regId = btn.dataset.reg;
+        const newAtt = btn.dataset.att;
+        const reg = participants.find((p) => p.id === regId);
+        const finalAtt = reg?.attendance === newAtt ? null : newAtt;
+
+        const { error } = await sb
+          .from('registrations')
+          .update({ attendance: finalAtt })
+          .eq('id', regId);
+        if (error) { toast('שגיאה בעדכון', 'error'); console.error(error); return; }
+
+        toast('עודכן', 'success');
+        // Re-open the modal to refresh
+        await showWorkoutDetails(workout, options);
+        if (onChange) onChange();
+      });
+    });
+  }
+}
+
+// ===== Payment via Bit =====
+async function showBitPayment(product, userId) {
+  const root = ensureModalRoot();
+  root.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>תשלום בביט</h3>
+        <p class="modal-message">
+          <strong>${escapeModalHtml(product.label)}</strong><br/>
+          סכום: <strong>${product.price}₪</strong>
+        </p>
+        <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:4px">שלח/י בביט למספר:</div>
+          <div style="font-size:22px;font-weight:700;letter-spacing:1px" id="bitPhoneDisplay">${escapeModalHtml(BIT_PHONE)}</div>
+        </div>
+        <p style="color:var(--text-mute);font-size:13px;margin-bottom:16px">
+          1. פתח/י את אפליקציית Bit ושלח/י ${product.price}₪.<br/>
+          2. כשסיימת, לחץ/י "שילמתי" — נאשר ונפעיל את המנוי.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" data-act="paid">שילמתי</button>
+          <button class="btn ghost" data-act="copy">📋 העתק מספר</button>
+          <button class="btn ghost" data-act="cancel">סגירה</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+
+  root.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  root.querySelector('[data-act="copy"]').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(BIT_PHONE);
+      toast('המספר הועתק', 'success');
+    } catch {
+      toast('לא הצלחנו להעתיק. סמן/י ידנית.', 'error');
+    }
+  });
+  root.querySelector('[data-act="paid"]').addEventListener('click', async () => {
+    const { error } = await sb.from('payment_requests').insert({
+      user_id: userId,
+      product: product.key,
+      amount_ils: product.price,
+    });
+    if (error) {
+      toast('שגיאה ביצירת בקשת התשלום', 'error');
+      console.error(error);
+      return;
+    }
+    close();
+    await confirmDialog({
+      title: 'תודה!',
+      message: `הבקשה נשלחה למאמן/ת. ברגע שהתשלום יאושר ${product.entries} כניסות יתווספו לכרטיסייה שלך.`,
+      confirmText: 'הבנתי',
+      cancelText: '',
+    });
+  });
 }
