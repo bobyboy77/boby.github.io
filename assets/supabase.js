@@ -74,7 +74,7 @@ const CANCEL_DEADLINE_HOURS = 12;
 
 // ===== Subscription products =====
 // Update BIT_PHONE to your phone number used in the Bit app.
-const BIT_PHONE = '050-1234567';
+const BIT_PHONE = '054-4288658';
 
 const PRODUCTS = {
   card_10: {
