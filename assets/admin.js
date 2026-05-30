@@ -41,9 +41,180 @@
   });
 
   await renderStats();
+  await renderPaymentRequests();
+  await renderTraineesManagement();
   await renderTrialsList();
   await renderAdminList();
 })();
+
+async function renderPaymentRequests() {
+  const container = document.getElementById('paymentRequestsList');
+  if (!container) return;
+
+  const { data: requests, error } = await sb
+    .from('payment_requests')
+    .select('id, user_id, product, amount_ils, status, created_at, profiles(full_name, phone)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = '<div class="empty">שגיאה</div>';
+    console.error(error);
+    return;
+  }
+
+  if (!requests.length) {
+    container.innerHTML = '<div class="empty">אין בקשות תשלום ממתינות</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  for (const req of requests) {
+    const pr = req.profiles || {};
+    const product = PRODUCTS[req.product];
+    const card = document.createElement('div');
+    card.className = 'trial-card';
+    card.innerHTML = `
+      <div class="trial-info">
+        <div class="title">${escapeHtml(pr.full_name || 'משתמש')}</div>
+        <div class="meta">
+          ${pr.phone ? `<span>📞 <a href="tel:${escapeHtml(pr.phone)}" style="color:inherit">${escapeHtml(pr.phone)}</a></span>` : ''}
+          <span>💰 ${req.amount_ils}₪</span>
+          <span>📦 ${escapeHtml(product?.label || req.product)}</span>
+        </div>
+        <div class="meta dim" style="margin-top:4px;font-size:11px">
+          ${new Date(req.created_at).toLocaleString('he-IL')}
+        </div>
+      </div>
+      <div class="workout-actions">
+        <button class="btn small success-solid" data-act="confirm">✓ אישור</button>
+        <button class="btn danger small" data-act="reject">✗ דחייה</button>
+      </div>
+    `;
+
+    card.querySelector('[data-act="confirm"]').addEventListener('click', async () => {
+      if (!product) {
+        toast('מוצר לא נמצא', 'error');
+        return;
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + product.validMonths);
+      const expiresIso = expiresAt.toISOString().slice(0, 10);
+
+      // Update user subscription
+      const { error: profErr } = await sb
+        .from('profiles')
+        .update({
+          subscription_type: product.key,
+          entries_remaining: product.entries,
+          subscription_expires_at: expiresIso,
+        })
+        .eq('id', req.user_id);
+
+      if (profErr) { toast('שגיאה בעדכון המנוי', 'error'); console.error(profErr); return; }
+
+      const { error: reqErr } = await sb
+        .from('payment_requests')
+        .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+        .eq('id', req.id);
+
+      if (reqErr) { toast('שגיאה בעדכון הבקשה', 'error'); return; }
+
+      toast('המנוי הוטען!', 'success');
+      await renderPaymentRequests();
+      await renderTraineesManagement();
+    });
+
+    card.querySelector('[data-act="reject"]').addEventListener('click', async () => {
+      const confirmed = await confirmDialog({
+        title: 'דחיית בקשה',
+        message: 'לדחות את בקשת התשלום?',
+        confirmText: 'דחה',
+        danger: true,
+      });
+      if (!confirmed) return;
+      const { error } = await sb
+        .from('payment_requests')
+        .update({ status: 'rejected' })
+        .eq('id', req.id);
+      if (error) { toast('שגיאה', 'error'); return; }
+      toast('נדחה', 'success');
+      await renderPaymentRequests();
+    });
+
+    container.appendChild(card);
+  }
+}
+
+async function renderTraineesManagement() {
+  const container = document.getElementById('traineesList');
+  if (!container) return;
+
+  const { data: trainees, error } = await sb
+    .from('profiles')
+    .select('id, full_name, phone, subscription_type, entries_remaining, subscription_expires_at, is_admin')
+    .or('is_trial.eq.false,is_trial.is.null')
+    .order('full_name', { ascending: true });
+
+  if (error) {
+    container.innerHTML = '<div class="empty">שגיאה</div>';
+    console.error(error);
+    return;
+  }
+
+  // Filter out admins for cleaner view (admins manage themselves)
+  const list = (trainees || []).filter((t) => !t.is_admin);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="empty">אין מתאמנים</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  for (const t of list) {
+    const isActive = subscriptionIsActive(t);
+    const card = document.createElement('div');
+    card.className = 'trial-card';
+    card.style.borderRight = isActive ? '3px solid var(--success)' : '3px solid var(--danger)';
+    card.innerHTML = `
+      <div class="trial-info">
+        <div class="title">${escapeHtml(t.full_name || 'משתמש')}</div>
+        <div class="meta">
+          ${t.phone ? `<span>📞 <a href="tel:${escapeHtml(t.phone)}" style="color:inherit">${escapeHtml(t.phone)}</a></span>` : ''}
+          <span class="dim" style="font-size:12px">${escapeHtml(subscriptionStatusText(t))}</span>
+        </div>
+      </div>
+      <div class="workout-actions">
+        <button class="btn ghost small" data-act="edit">ערוך מנוי</button>
+      </div>
+    `;
+
+    card.querySelector('[data-act="edit"]').addEventListener('click', async () => {
+      const result = await promptDialog({
+        title: `מנוי: ${t.full_name}`,
+        fields: [
+          { name: 'type', label: 'סוג מנוי (card_10 / single / none)', value: t.subscription_type || 'none' },
+          { name: 'entries', label: 'כניסות', type: 'number', value: t.entries_remaining || 0 },
+          { name: 'expires', label: 'תוקף (YYYY-MM-DD)', type: 'date', value: t.subscription_expires_at || '' },
+        ],
+      });
+      if (!result) return;
+
+      const { error } = await sb.from('profiles').update({
+        subscription_type: result.type || 'none',
+        entries_remaining: parseInt(result.entries) || 0,
+        subscription_expires_at: result.expires || null,
+      }).eq('id', t.id);
+
+      if (error) { toast('שגיאה', 'error'); return; }
+      toast('עודכן', 'success');
+      await renderTraineesManagement();
+    });
+
+    container.appendChild(card);
+  }
+}
 
 async function renderStats() {
   const strip = document.getElementById('statsStrip');

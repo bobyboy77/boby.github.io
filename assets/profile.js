@@ -20,6 +20,15 @@
   document.getElementById('full_name').value = profile?.full_name || '';
   document.getElementById('phone').value = profile?.phone || '';
 
+  const subBox = document.getElementById('subBox');
+  if (subBox) {
+    subBox.innerHTML = `
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">מנוי</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:12px">${subscriptionStatusText(profile)}</div>
+      <a href="pricing.html" class="btn small ghost">רכישת כניסות</a>
+    `;
+  }
+
   document.getElementById('profileForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const full_name = document.getElementById('full_name').value.trim();

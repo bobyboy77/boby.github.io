@@ -165,6 +165,86 @@ end; $$;
 
 ---
 
+## 7.2.1 מנויים, כניסות, נוכחות ובקשות תשלום
+
+עוד מיגרציה שצריך להריץ — היא מוסיפה את מערכת הכרטיסיות, הנוכחות ובקשות התשלום:
+
+```sql
+-- 1. profiles: subscription fields
+alter table public.profiles
+  add column if not exists subscription_type text default 'none',
+  add column if not exists entries_remaining int default 0,
+  add column if not exists subscription_expires_at date;
+
+-- 2. registrations: track if a credit was consumed + attendance
+alter table public.registrations
+  add column if not exists credit_consumed boolean default false,
+  add column if not exists attendance text;
+-- attendance values: null (pending), 'attended', 'no_show'
+
+-- 3. payment requests (self-reported, admin confirms)
+create table if not exists public.payment_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  product text not null,
+  amount_ils numeric(8,2) not null,
+  status text not null default 'pending',
+  created_at timestamptz default now(),
+  confirmed_at timestamptz
+);
+
+alter table public.payment_requests enable row level security;
+
+drop policy if exists "payments_read_own_or_admin" on public.payment_requests;
+create policy "payments_read_own_or_admin" on public.payment_requests
+  for select using (
+    user_id = auth.uid()
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
+drop policy if exists "payments_insert_own" on public.payment_requests;
+create policy "payments_insert_own" on public.payment_requests
+  for insert with check (user_id = auth.uid());
+
+drop policy if exists "payments_admin_update" on public.payment_requests;
+create policy "payments_admin_update" on public.payment_requests
+  for update using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
+-- 4. RPC functions for atomic credit consumption/refund
+create or replace function public.consume_entry(p_user uuid)
+returns boolean language plpgsql security definer as $$
+declare v_credits int; v_expires date;
+begin
+  select entries_remaining, subscription_expires_at
+    into v_credits, v_expires
+    from public.profiles where id = p_user;
+  if v_credits is null or v_credits <= 0 then return false; end if;
+  if v_expires is not null and v_expires < current_date then return false; end if;
+  update public.profiles set entries_remaining = entries_remaining - 1 where id = p_user;
+  return true;
+end; $$;
+
+create or replace function public.refund_entry(p_user uuid)
+returns void language plpgsql security definer as $$
+begin
+  update public.profiles set entries_remaining = entries_remaining + 1 where id = p_user;
+end; $$;
+```
+
+## 7.2.2 עדכון מספר ה-Bit שלך
+
+ערוך/י את `assets/supabase.js`, שורה עם `BIT_PHONE`, ועדכן/י לטלפון Bit שלך:
+
+```js
+const BIT_PHONE = '050-XXXXXXX';
+```
+
+אפשר גם לעדכן את המחירים ב-`PRODUCTS` אם רוצה/ה אחרת מ-700₪/80₪.
+
+---
+
 ## 7.3 הרשאת מאמן למחיקת טריאלים
 
 לצורך כפתור "מחק" של טריאל בפאנל המאמן:

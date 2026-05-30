@@ -569,6 +569,74 @@ input:focus, select:focus, textarea:focus {
 }
 .btn.danger-solid:hover { opacity: 0.9; }
 
+.btn.success-solid {
+  background: var(--success);
+  color: #fff;
+}
+.btn.success-solid:hover { opacity: 0.9; }
+
+/* ===== Mini card clickable (admin) ===== */
+.workout-mini.clickable { cursor: pointer; }
+.workout-mini.clickable:hover { border-color: var(--text-dim); }
+
+/* ===== Participants list in modal ===== */
+.participants-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.participant-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.participant-row:last-child { border-bottom: none; }
+.participant-info > div { margin-bottom: 2px; }
+.participant-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ===== Pricing page ===== */
+.product-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+}
+.product-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.product-meta {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.product-price {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .product-card {
+    grid-template-columns: 1fr;
+    text-align: right;
+  }
+  .product-price { text-align: right; }
+}
+
 /* ===== Stats strip ===== */
 .stats-strip {
   display: grid;
