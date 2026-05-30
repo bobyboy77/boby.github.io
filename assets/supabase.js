@@ -82,14 +82,14 @@ const PRODUCTS = {
     label: 'כרטיסיית 10 כניסות',
     entries: 10,
     validMonths: 3,
-    price: 700,
+    price: 450,
   },
   single: {
     key: 'single',
     label: 'שיעור בודד',
     entries: 1,
     validMonths: 1,
-    price: 80,
+    price: 60,
   },
 };
 
