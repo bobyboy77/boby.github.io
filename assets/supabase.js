@@ -356,12 +356,33 @@ async function showWorkoutDetails(workout, options = {}) {
   const { isAdmin = false, onChange } = options;
   const root = ensureModalRoot();
 
-  const { data: regs } = await sb
+  // 1. Fetch registrations for this workout
+  const { data: regs, error: regsError } = await sb
     .from('registrations')
-    .select('id, user_id, attendance, profiles(full_name, phone, is_trial, subscription_type, entries_remaining)')
+    .select('id, user_id, attendance')
     .eq('workout_id', workout.id);
 
-  const participants = regs || [];
+  if (regsError) {
+    console.error('showWorkoutDetails: failed to fetch registrations', regsError);
+  }
+
+  // 2. Fetch profiles for those users (separate query — more reliable than relational join)
+  const profilesMap = {};
+  if (regs && regs.length) {
+    const userIds = regs.map((r) => r.user_id);
+    const { data: profiles, error: profilesError } = await sb
+      .from('profiles')
+      .select('id, full_name, phone, is_trial, subscription_type, entries_remaining')
+      .in('id', userIds);
+    if (profilesError) console.error('showWorkoutDetails: failed to fetch profiles', profilesError);
+    for (const p of profiles || []) profilesMap[p.id] = p;
+  }
+
+  // 3. Combine
+  const participants = (regs || []).map((r) => ({
+    ...r,
+    profiles: profilesMap[r.user_id] || {},
+  }));
   const count = participants.length;
 
   let participantsHtml;
