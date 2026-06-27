@@ -243,12 +243,11 @@ function googleCalendarUrl(workout) {
   const { start, end } = workoutCalendarDates(workout);
   const dates = `${icsTimestamp(start)}/${icsTimestamp(end)}`;
   const params = new URLSearchParams({
-    action: 'TEMPLATE',
     text: workout.title || 'אימון',
     dates: dates,
   });
   if (workout.notes) params.set('details', workout.notes);
-  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  return `https://calendar.google.com/calendar/u/0/r/eventedit?${params.toString()}`;
 }
 
 // Opens Apple Calendar directly via data URI (no file download on iOS/Mac).
