@@ -3,235 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>נריה יעקובסון • אימוני קליסתניקס וליווי אישי</title>
-  <meta name="description" content="אימוני קבוצה בקליסתניקס וליווי אישי לאנשים עסוקים — בלי חדר כושר, בלי ציוד ובלי שעות של אימונים. קבעו שיעור ניסיון." />
+  <title>התחברות • Training</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/landing.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
-<body class="landing">
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div style="text-align:center;font-size:36px;margin-bottom:8px">🏋️</div>
+      <h1>Training</h1>
+      <p class="subtitle">התחבר/י כדי לראות את לוח האימונים</p>
 
-  <!-- ===== Hero ===== -->
-  <section class="l-hero">
-    <div class="l-inner">
-      <div class="l-hero-text">
-        <p class="l-eyebrow">אימוני קליסתניקס בפתח תקווה — קבוצתי או אחד על אחד</p>
-        <h1 class="l-hero-title">
-          אתה לא מרוצה מאיך שהגוף נראה<br />
-          <span class="l-orange">אבל גם אין לך זמן לחדכ</span>
-        </h1>
-        <div>
-          <span class="l-hero-sub">יש לי שיטה שתוכננה בדיוק בשבילך</span>
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">שם משתמש (אימייל)</label>
+          <input type="email" id="email" autocomplete="username" required />
         </div>
-        <p class="l-hero-note">(אימוני קבוצה בפתח תקווה, ואופציה לאימונים אחד על אחד עם נריה — בלי צורך בחדכ, בציוד ובלי שעות של אימונים)</p>
-        <a class="l-btn" href="trial.html">יאללה נריה קח אותי לגוף שאני רוצה</a>
-      </div>
-      <div class="l-hero-img">
-        <img src="assets/img/hero.svg" alt="נריה יעקובסון" width="760" height="760" />
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Testimonials ===== -->
-  <section class="l-testimonials">
-    <div class="l-inner">
-      <h2 class="l-sec-title">
-        ככה מדברים אנשים<br />
-        <span class="l-orange">שלקחו את עצמם בידיים</span>
-      </h2>
-      <div class="l-carousel" id="carousel">
-        <div class="l-slide"><img src="assets/img/testimonial-1.svg" alt="המלצה של מתאמן" loading="lazy" /></div>
-        <div class="l-slide"><img src="assets/img/testimonial-2.svg" alt="המלצה של מתאמנת" loading="lazy" /></div>
-        <div class="l-slide"><img src="assets/img/testimonial-3.svg" alt="המלצה של מתאמן" loading="lazy" /></div>
-        <div class="l-slide"><img src="assets/img/testimonial-4.svg" alt="המלצה של מתאמן" loading="lazy" /></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Empathy ===== -->
-  <section class="l-empathy">
-    <div class="l-inner">
-      <div class="l-empathy-box">
-        <h2>אם את או אתה מרגישים ש..</h2>
-        <p>הזמן עובר, הגוף כבר לא כמו שהיה, ואתם נותנים את כל כולכם לעבודה ולמשפחה – אבל שוכחים את עצמכם בדרך…</p>
-        <p>אני כאן כדי להזכיר לכם: גם לכם מגיע להרגיש טוב עם הגוף, שתצליחו לזוז בקלילות ושתרגישו מלאי ביטחון.</p>
-      </div>
-      <div class="l-btn-wrap">
-        <a class="l-btn" href="trial.html">אני רוצה להרגיש טוב עם הגוף שלי</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Balance / approach ===== -->
-  <section class="l-balance">
-    <div class="l-inner">
-      <h2 class="l-sec-title">
-        שינוי אמיתי לא קורה בקיצוניות<br />
-        <span class="l-orange">הוא קורה באיזון</span>
-      </h2>
-      <div class="l-balance-grid">
-        <div class="l-balance-text">
-          <p>אני לא מאמין בשיטות של <strong>"הכול או כלום"</strong>. לא מאמין בדיאטות קיצוניות, באימונים שלא משאירים אוויר, או בגישות שמחזיקות חודש ואז מתפרקות.</p>
-          <p><strong>מה כן?</strong> אני מאמין בלב שלם בלעשות את המקסימום עם המינימום האפשרי – ולבנות הרגלים שאפשר להתמיד בהם לאורך זמן. בין אם באימון קבוצתי עם אנשים שדוחפים אותך קדימה, ובין אם בליווי אישי שמותאם בדיוק לחיים שלך – בלי דרמות, בלי קיצוניות, אבל עם תוצאות שנשארות.</p>
-          <p>אני לא רק מאמן – אני גם תלמיד. לומד מכל מתאמן ומתאמנת שלי איך להשתפר ולדייק, כדי שבסוף כל מי שמתחיל אצלי יגיע למטרה שלו.</p>
-          <p>וזו הסיבה שהאימונים אצלי לא מרגישים כמו "עוד שיעור" – אלא כמו ליווי אמיתי שמחזיק אותך גם כשקשה.</p>
+        <div class="field">
+          <label for="password">סיסמה</label>
+          <input type="password" id="password" autocomplete="current-password" required />
         </div>
-        <div class="l-balance-visual" aria-hidden="true"></div>
-      </div>
-    </div>
-  </section>
+        <button type="submit" class="btn full" id="submitBtn">כניסה</button>
+      </form>
 
-  <!-- ===== Features ===== -->
-  <section class="l-features">
-    <div class="l-inner">
-      <h2 class="l-sec-title">
-        במחיר של מנוי חודשי בחדכ<br />
-        <span class="l-orange">אתם מקבלים אצלי..</span>
-      </h2>
-      <div class="l-cards">
-        <div class="l-card">
-          <div class="l-card-icon">🤸</div>
-          <h3>אימוני קבוצה בפתח תקווה</h3>
-          <p>שיעורי קליסתניקס קבוצתיים בפתח תקווה, באווירה מטורפת ומותאמים לכל רמה – מהצעד הראשון ועד תרגילים מתקדמים.</p>
-        </div>
-        <div class="l-card">
-          <div class="l-card-icon">🎯</div>
-          <h3>אימון אישי – אחד על אחד</h3>
-          <p>אופציה לאימונים אחד על אחד עם נריה בפתח תקווה, עם תוכנית שמותאמת בדיוק למטרות, ליכולות ולזמן שלך.</p>
-        </div>
-        <div class="l-card">
-          <div class="l-card-icon">💪</div>
-          <h3>תוכנית אימונים</h3>
-          <p>תוכנית קליסתניקס שבנויה לפי המטרות והיכולות שלך, כדי להוציא מעצמך את המיטב.</p>
-        </div>
-        <div class="l-card">
-          <div class="l-card-icon">📈</div>
-          <h3>מעקב והתקדמות</h3>
-          <p>מעקב צמוד אחרי ההתקדמות שלך, כדי להבטיח שאתה מתקדם נכון לעבר המטרה.</p>
-        </div>
-        <div class="l-card">
-          <div class="l-card-icon">🔥</div>
-          <h3>קהילה ומוטיבציה</h3>
-          <p>קבוצת מתאמנים שדוחפת אחד את השני קדימה – הרבה יותר קל להתמיד כשלא עושים את זה לבד.</p>
-        </div>
-        <div class="l-card">
-          <div class="l-card-icon">📱</div>
-          <h3>מערכת הרשמה נוחה</h3>
-          <p>רואים את לוח האימונים ונרשמים לשיעור בקליק – הכול מרוכז במקום אחד.</p>
-        </div>
-      </div>
+      <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-dim)">
+        ראשון/ה כאן? <a href="trial.html" style="color:var(--text);text-decoration:underline">קבע/י שיעור ניסיון</a>
+      </p>
     </div>
-  </section>
+  </div>
 
-  <!-- ===== Feel after ===== -->
-  <section class="l-after">
-    <div class="l-inner">
-      <div class="l-divider"></div>
-      <h2 class="l-sec-title">
-        מה תרגישו אחרי<br />
-        <span class="l-orange">שתצטרפו לאימונים</span>
-      </h2>
-      <div class="l-after-box">
-        <p>אתה תרגיש תחושת שליטה בחיים שלך, תפסיק לחוות דאונים של אנרגיה במהלך היום ומלא כוח להשקיע בעצמך.</p>
-        <p>תראה שינוי אמיתי בגוף – פחות כאבים, פחות קושי כשאתה תרצה לקום מהמיטה ופחות להתנשף כשתעלה מדרגות.</p>
-        <p>תקבל מחמאות מהסביבה, ותרגיש גאה בעצמך כמו פעם, עם משפחה שמתגאה בך.</p>
-        <p>זהו מסע שלא תרצה לחזור ממנו.</p>
-      </div>
-      <div class="l-btn-wrap">
-        <a class="l-btn" href="trial.html">אני רוצה להתחיל את המסע</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Video ===== -->
-  <section class="l-video">
-    <div class="l-inner">
-      <h2 class="l-sec-title">
-        אני יודע שאין לכם הרבה זמן<br />
-        <span class="l-orange">כי אתם עסוקים</span>
-      </h2>
-      <p class="l-video-note">(ככה נראה אימון אצלי – קצר, ממוקד ובלי לבזבז זמן)</p>
-      <div class="l-video-frame">
-        <img src="assets/img/video-poster.svg" alt="סרטון אימון לדוגמה" width="1280" height="720" loading="lazy" />
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== No time ===== -->
-  <section class="l-notime">
-    <div class="l-shape" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none">
-        <path class="l-shape-fill" d="M738,99l262-93V0H0v5.6L738,99z"></path>
-      </svg>
-    </div>
-    <div class="l-inner">
-      <h2 class="l-sec-title">
-        אין לך זמן?<br />
-        <span class="l-orange">בדיוק בגלל זה אני כאן</span>
-      </h2>
-    </div>
-  </section>
-
-  <!-- ===== About ===== -->
-  <section class="l-about">
-    <div class="l-inner">
-      <div class="l-about-grid">
-        <div class="l-about-img">
-          <img src="assets/img/about.svg" alt="נריה יעקובסון" width="800" height="800" loading="lazy" />
-        </div>
-        <div class="l-about-text">
-          <h2>אני <span class="l-orange">נריה יעקובסון</span></h2>
-          <p>בגיל 13 ניסיתי לעשות את המתח הראשון שלי – ונפתח בפניי עולם מרתק בשם קליסתניקס.</p>
-          <p>הוא תפס אותי חזק, ומאז שום ספורט אחר לא באמת ריגש אותי.</p>
-          <p>עם השנים שירתתי כחובש קרבי, עבדתי בחדר כושר, וראיתי מקרוב את מה שחוזר אצל כולם: אין זמן.</p>
-          <p>אנשים טובעים בעבודה, במשפחה, במרוץ היומיומי – ושוכחים את עצמם.</p>
-          <p>שם נפל לי האסימון. כל הניסיון שצברתי נועד בשביל הרגע הזה – היום אני מעביר אימוני קבוצה בקליסתניקס ומלווה מתאמנים באופן אישי, כדי לעזור לגברים ונשים עסוקים להיכנס לכושר בתנאים שלהם.</p>
-          <p>כי לכולם מגיע להרגיש חזקים, בריאים וגאים בעצמם. גם לך</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Final CTA ===== -->
-  <section class="l-cta">
-    <div class="l-inner">
-      <h2>רוצים להתחיל?<br /><span class="l-orange">בואו לשיעור ניסיון</span></h2>
-      <p>בוחרים אימון מלוח השיעורים, משאירים פרטים – ונתראה באימון הראשון שלכם.</p>
-      <a class="l-btn l-btn--big" href="trial.html">קבעו שיעור ניסיון עכשיו</a>
-      <span class="l-cta-login">כבר מתאמנים אצלי? <a href="login.html">כניסת מתאמנים</a></span>
-    </div>
-  </section>
-
-  <footer class="l-footer">
-    <div class="l-inner">נריה יעקובסון • אימוני קליסתניקס וליווי אישי</div>
-  </footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/supabase.js"></script>
   <script>
-    // Auto-advance testimonials carousel; pauses on touch/hover.
-    (function () {
-      const carousel = document.getElementById('carousel');
-      if (!carousel) return;
-      let paused = false;
-      ['mouseenter', 'touchstart', 'pointerdown'].forEach(ev =>
-        carousel.addEventListener(ev, () => { paused = true; }, { passive: true })
-      );
-      carousel.addEventListener('mouseleave', () => { paused = false; });
-      setInterval(() => {
-        if (paused) return;
-        const slide = carousel.querySelector('.l-slide');
-        if (!slide) return;
-        const step = slide.offsetWidth + 14;
-        const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-        // RTL: scrollLeft goes negative as we advance
-        const atEnd = Math.abs(carousel.scrollLeft) >= maxScroll - 4;
-        if (atEnd) {
-          carousel.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          carousel.scrollBy({ left: -step, behavior: 'smooth' });
-        }
-      }, 3500);
+    (async () => {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) window.location.href = 'schedule.html';
     })();
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'מתחבר…';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        toast('שם משתמש או סיסמה שגויים', 'error');
+        btn.disabled = false;
+        btn.textContent = 'כניסה';
+        return;
+      }
+      window.location.href = 'schedule.html';
+    });
   </script>
 </body>
 </html>
