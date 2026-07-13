@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="vbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#26221f"/>
+      <stop offset="100%" stop-color="#100f0e"/>
+    </linearGradient>
+    <linearGradient id="vor" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9b07a"/>
+      <stop offset="100%" stop-color="#d96f2b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#vbg)"/>
+  <circle cx="640" cy="330" r="86" fill="url(#vor)"/>
+  <path d="M 615 288 L 615 372 L 690 330 Z" fill="#1a1918"/>
+  <text x="640" y="490" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="700" fill="#f5f5f5">כאן יבוא סרטון אימון</text>
+  <text x="640" y="540" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="#c9c4be">assets/img/video-poster.svg</text>
+</svg>
