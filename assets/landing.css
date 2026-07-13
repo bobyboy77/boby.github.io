@@ -76,6 +76,19 @@ body.landing {
   gap: 48px;
   width: 100%;
 }
+.l-eyebrow {
+  display: inline-block;
+  font-size: clamp(14px, 1.4vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--l-orange-light);
+  background: rgba(249, 176, 122, 0.12);
+  border: 1px solid rgba(249, 176, 122, 0.35);
+  border-radius: 999px;
+  padding: 7px 18px;
+  margin-bottom: 18px;
+}
+
 .l-hero-title {
   font-size: clamp(30px, 4.2vw, 52px);
 }
