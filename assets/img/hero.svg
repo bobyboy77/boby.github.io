@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="760" viewBox="0 0 760 760">
+  <defs>
+    <radialGradient id="badge" cx="35%" cy="30%" r="90%">
+      <stop offset="0%" stop-color="#33302d"/>
+      <stop offset="60%" stop-color="#232120"/>
+      <stop offset="100%" stop-color="#151413"/>
+    </radialGradient>
+    <linearGradient id="ltr" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9b07a"/>
+      <stop offset="100%" stop-color="#d96f2b"/>
+    </linearGradient>
+  </defs>
+  <circle cx="380" cy="380" r="360" fill="url(#badge)" stroke="#3a3835" stroke-width="14"/>
+  <circle cx="380" cy="380" r="330" fill="none" stroke="#4a4744" stroke-width="3"/>
+  <text x="215" y="480" font-family="Arial Black, Arial, sans-serif" font-size="300" font-weight="900" fill="url(#ltr)" opacity="0.9">N</text>
+  <text x="420" y="480" font-family="Arial Black, Arial, sans-serif" font-size="300" font-weight="900" fill="url(#ltr)" opacity="0.9">Y</text>
+  <g transform="translate(380 300)">
+    <circle r="58" fill="#3a3835"/>
+    <circle cy="-14" r="22" fill="#8c8781"/>
+    <path d="M -34 42 Q 0 2 34 42 Z" fill="#8c8781"/>
+  </g>
+  <text x="380" y="620" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#f5f5f5">כאן תבוא התמונה שלך</text>
+  <text x="380" y="662" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#c9c4be">assets/img/hero.svg</text>
+</svg>

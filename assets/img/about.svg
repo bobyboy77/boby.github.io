@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="abg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a2624"/>
+      <stop offset="100%" stop-color="#141312"/>
+    </linearGradient>
+    <linearGradient id="aor" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9b07a"/>
+      <stop offset="100%" stop-color="#d96f2b"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" rx="28" fill="url(#abg)"/>
+  <circle cx="400" cy="310" r="120" fill="#3a3835"/>
+  <circle cx="400" cy="270" r="48" fill="#8c8781"/>
+  <path d="M 320 400 Q 400 310 480 400 Z" fill="#8c8781"/>
+  <rect x="180" y="480" width="440" height="8" rx="4" fill="url(#aor)"/>
+  <text x="400" y="570" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="700" fill="#f5f5f5">כאן תבוא תמונה שלך</text>
+  <text x="400" y="618" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="#c9c4be">assets/img/about.svg</text>
+</svg>
