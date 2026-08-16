@@ -15,6 +15,7 @@
     <nav>
       <a href="schedule.html">השבוע</a>
       <a href="my-workouts.html">האימונים שלי</a>
+      <a href="my-plan.html">התוכנית שלי</a>
       <a href="pricing.html">תמחור</a>
       <a href="profile.html">פרופיל</a>
       <a href="admin.html" class="active">פאנל מאמן</a>
@@ -25,77 +26,122 @@
   <main class="container">
     <div class="page-header">
       <h2>פאנל מאמן</h2>
-      <p>סקירה, ניהול אימונים וטריאלים</p>
     </div>
 
-    <div id="statsStrip" class="stats-strip"></div>
-
-    <div class="page-header" style="margin-top:8px">
-      <h2>💳 בקשות תשלום</h2>
-      <p>אישור תשלומי Bit מהמתאמנים</p>
-    </div>
-    <div id="paymentRequestsList" class="trials-section">
-      <div class="empty">טוען…</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="overview">סקירה</button>
+      <button class="tab-btn" data-tab="personal">מפגשים אישיים</button>
+      <button class="tab-btn" data-tab="plans">תוכניות אימון</button>
+      <button class="tab-btn" data-tab="progress">מעקב התקדמות</button>
     </div>
 
-    <div class="page-header" style="margin-top:32px">
-      <h2>👤 מתאמנים</h2>
-      <p>מנויים פעילים ומפוגים</p>
-    </div>
-    <div id="traineesList" class="trials-section">
-      <div class="empty">טוען…</div>
-    </div>
+    <!-- OVERVIEW TAB -->
+    <div class="tab-panel" id="tab-overview">
+      <div id="statsStrip" class="stats-strip"></div>
 
-    <div class="page-header" style="margin-top:32px">
-      <h2>🆕 טריאלים</h2>
-      <p>לידים שביקשו שיעור ניסיון</p>
-    </div>
-    <div id="trialsList" class="trials-section">
-      <div class="empty">טוען…</div>
-    </div>
-
-    <div class="page-header" style="margin-top:32px">
-      <h2>הוספת אימון</h2>
-    </div>
-
-    <form class="admin-form" id="newWorkoutForm">
-      <div class="field">
-        <label for="title">כותרת האימון</label>
-        <input type="text" id="title" required placeholder="למשל: HIIT בוקר" />
+      <div class="page-header" style="margin-top:8px">
+        <h2>💳 בקשות תשלום</h2>
+        <p>אישור תשלומי Bit מהמתאמנים</p>
       </div>
-      <div class="row">
+      <div id="paymentRequestsList" class="trials-section">
+        <div class="empty">טוען…</div>
+      </div>
+
+      <div class="page-header" style="margin-top:32px">
+        <h2>👤 מתאמנים</h2>
+        <p>מנויים פעילים ומפוגים</p>
+      </div>
+      <div id="traineesList" class="trials-section">
+        <div class="empty">טוען…</div>
+      </div>
+
+      <div class="page-header" style="margin-top:32px">
+        <h2>🆕 טריאלים</h2>
+        <p>לידים שביקשו שיעור ניסיון</p>
+      </div>
+      <div id="trialsList" class="trials-section">
+        <div class="empty">טוען…</div>
+      </div>
+
+      <div class="page-header" style="margin-top:32px">
+        <h2>הוספת אימון</h2>
+      </div>
+
+      <form class="admin-form" id="newWorkoutForm">
         <div class="field">
-          <label for="workout_date">תאריך</label>
-          <input type="date" id="workout_date" required />
+          <label for="title">כותרת האימון</label>
+          <input type="text" id="title" required placeholder="למשל: HIIT בוקר" />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="workout_date">תאריך</label>
+            <input type="date" id="workout_date" required />
+          </div>
+          <div class="field">
+            <label for="start_time">שעת התחלה</label>
+            <input type="time" id="start_time" required />
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="duration_min">משך (דקות)</label>
+            <input type="number" id="duration_min" min="10" max="240" value="60" />
+          </div>
+          <div class="field">
+            <label for="max_participants">מקסימום משתתפים</label>
+            <input type="number" id="max_participants" min="1" max="50" value="10" />
+          </div>
         </div>
         <div class="field">
-          <label for="start_time">שעת התחלה</label>
-          <input type="time" id="start_time" required />
+          <label for="notes">הערות (אופציונלי)</label>
+          <input type="text" id="notes" placeholder="ציוד נדרש, מיקום וכו׳" />
         </div>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label for="duration_min">משך (דקות)</label>
-          <input type="number" id="duration_min" min="10" max="240" value="60" />
-        </div>
-        <div class="field">
-          <label for="max_participants">מקסימום משתתפים</label>
-          <input type="number" id="max_participants" min="1" max="50" value="10" />
-        </div>
-      </div>
-      <div class="field">
-        <label for="notes">הערות (אופציונלי)</label>
-        <input type="text" id="notes" placeholder="ציוד נדרש, מיקום וכו׳" />
-      </div>
-      <button type="submit" class="btn">הוסף אימון</button>
-    </form>
+        <button type="submit" class="btn">הוסף אימון</button>
+      </form>
 
-    <div class="page-header" style="margin-top:32px">
-      <h2>אימונים השבוע</h2>
+      <div class="page-header" style="margin-top:32px">
+        <h2>אימונים השבוע</h2>
+      </div>
+
+      <div id="adminList">
+        <div class="empty">טוען…</div>
+      </div>
     </div>
 
-    <div id="adminList">
-      <div class="empty">טוען…</div>
+    <!-- PERSONAL SESSIONS TAB -->
+    <div class="tab-panel" id="tab-personal" style="display:none">
+      <div class="page-header">
+        <h2>🏋️ מפגשים אישיים</h2>
+        <p>מעקב אחר שיעורים פרטיים לכל מתאמן</p>
+      </div>
+      <div id="personalSessionsList">
+        <div class="empty">טוען…</div>
+      </div>
+    </div>
+
+    <!-- WORKOUT PLANS TAB -->
+    <div class="tab-panel" id="tab-plans" style="display:none">
+      <div class="page-header">
+        <h2>📋 תוכניות אימון</h2>
+        <p>בנה תוכניות ושייך אותן למתאמנים</p>
+      </div>
+      <div style="margin-bottom:20px">
+        <button class="btn" id="createPlanBtn">+ צור תוכנית חדשה</button>
+      </div>
+      <div id="workoutPlansList">
+        <div class="empty">טוען…</div>
+      </div>
+    </div>
+
+    <!-- PROGRESS TRACKING TAB -->
+    <div class="tab-panel" id="tab-progress" style="display:none">
+      <div class="page-header">
+        <h2>📈 מעקב התקדמות</h2>
+        <p>תיעוד ביצועים לאורך זמן לכל מתאמן</p>
+      </div>
+      <div id="progressTrackingArea">
+        <div class="empty">טוען…</div>
+      </div>
     </div>
   </main>
 
