@@ -787,3 +787,288 @@ input:focus, select:focus, textarea:focus {
   .topbar nav { gap: 8px; }
   .topbar nav a { padding: 4px 8px; font-size: 13px; }
 }
+
+/* ===== Tab bar ===== */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
+
+/* ===== Plan cards ===== */
+.plan-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.plan-header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.plan-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.plan-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.plan-assignees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.assignee-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.assignee-remove {
+  background: none;
+  border: none;
+  color: var(--text-mute);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+  font-family: inherit;
+}
+.assignee-remove:hover { color: var(--danger); }
+
+/* ===== Exercise table ===== */
+.exercise-table-wrap {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.exercise-table,
+.progress-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.exercise-table th,
+.progress-table th {
+  background: var(--surface-2);
+  padding: 8px 10px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.exercise-table td,
+.progress-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.exercise-table tr:last-child td,
+.progress-table tr:last-child td {
+  border-bottom: none;
+}
+
+.exercise-table tr:hover td,
+.progress-table tr:hover td {
+  background: var(--surface-2);
+}
+
+.ex-notes {
+  white-space: normal !important;
+  max-width: 200px;
+  color: var(--text-dim);
+}
+
+/* ===== Progress tracking ===== */
+.progress-controls {
+  margin-bottom: 8px;
+}
+
+.progress-exercise-block {
+  margin-bottom: 24px;
+}
+
+.progress-exercise-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.progress-latest td {
+  background: rgba(16, 185, 129, 0.07) !important;
+}
+
+.progress-delta {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.delta-up { color: var(--success); font-weight: 600; }
+.delta-down { color: var(--danger); font-weight: 600; }
+
+/* ===== Personal sessions card ===== */
+.pt-session-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pt-stats-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pt-stat-chip {
+  display: inline-block;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pt-history-wrap {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.pt-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pt-history-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--text-dim);
+}
+
+.pt-history-date {
+  color: var(--text);
+  font-weight: 500;
+  min-width: 120px;
+}
+
+/* ===== Trainee plan page ===== */
+.pt-summary-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.pt-summary-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.pt-summary-stats {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pt-stat {
+  flex: 1;
+  text-align: center;
+  padding: 14px 8px;
+  border-left: 1px solid var(--border);
+}
+.pt-stat:last-child { border-left: none; }
+
+.pt-stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.pt-stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.plan-card-trainee {
+  margin-bottom: 16px;
+}
+
+/* ===== Modal scrollable for long forms ===== */
+.modal-card {
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+@media (max-width: 560px) {
+  .plan-header { flex-direction: column; }
+  .pt-session-card { flex-direction: column; }
+  .pt-summary-stats { flex-direction: column; }
+  .pt-stat { border-left: none; border-bottom: 1px solid var(--border); }
+  .pt-stat:last-child { border-bottom: none; }
+}

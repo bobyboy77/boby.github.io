@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>אימונים השבוע</title>
+  <title>התוכנית שלי • Training</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,9 +13,9 @@
   <header class="topbar">
     <a href="schedule.html" class="brand">Training</a>
     <nav>
-      <a href="schedule.html" class="active">השבוע</a>
+      <a href="schedule.html">השבוע</a>
       <a href="my-workouts.html">האימונים שלי</a>
-      <a href="my-plan.html">התוכנית שלי</a>
+      <a href="my-plan.html" class="active">התוכנית שלי</a>
       <a href="pricing.html">תמחור</a>
       <a href="profile.html">פרופיל</a>
       <a href="#" id="adminLink" style="display:none">פאנל מאמן</a>
@@ -23,26 +23,30 @@
     </nav>
   </header>
 
-  <div class="hero-banner">
-    <div class="hero-content">
-      <h1>האימונים השבוע</h1>
-    </div>
-  </div>
-
-  <main class="container">
-    <div class="week-nav">
-      <button class="btn ghost small" id="prevWeek">‹ שבוע קודם</button>
-      <span id="weekRange"></span>
-      <button class="btn ghost small" id="nextWeek">שבוע הבא ›</button>
+  <main class="container" style="max-width:720px">
+    <div class="page-header">
+      <h2>התוכנית שלי</h2>
     </div>
 
-    <div id="scheduleList">
+    <div id="ptSessionsBox"></div>
+
+    <div class="page-header" style="margin-top:32px">
+      <h2>📋 תוכנית האימון שלי</h2>
+    </div>
+    <div id="myPlanContent">
+      <div class="empty">טוען…</div>
+    </div>
+
+    <div class="page-header" style="margin-top:32px">
+      <h2>📈 ההתקדמות שלי</h2>
+    </div>
+    <div id="myProgressContent">
       <div class="empty">טוען…</div>
     </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="assets/supabase.js"></script>
-  <script src="assets/schedule.js"></script>
+  <script src="assets/my-plan.js"></script>
 </body>
 </html>

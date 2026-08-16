@@ -286,3 +286,105 @@ assets/
   schedule.js      לוגיקת לוח האימונים
   admin.js         לוגיקת פאנל המאמן
 ```
+
+---
+
+## 8. מעקב אישי — מפגשים, תוכניות והתקדמות
+
+### 8.1 הרצת SQL ב-Supabase
+
+כנס לדשבורד Supabase → SQL Editor ← הרץ את הסקריפט הבא:
+
+```sql
+-- עמודות מפגשים אישיים על profiles
+alter table public.profiles
+  add column if not exists pt_sessions_total int default 0,
+  add column if not exists pt_sessions_used  int default 0;
+
+-- לוג מפגשים אישיים
+create table if not exists public.personal_sessions (
+  id           uuid primary key default gen_random_uuid(),
+  trainee_id   uuid not null references auth.users(id) on delete cascade,
+  session_date date not null default current_date,
+  notes        text,
+  created_by   uuid references auth.users(id),
+  created_at   timestamptz default now()
+);
+
+-- תוכניות אימון
+create table if not exists public.workout_plans (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  description text,
+  created_by  uuid references auth.users(id),
+  created_at  timestamptz default now()
+);
+
+-- תרגילים בתוכנית
+create table if not exists public.plan_exercises (
+  id            uuid primary key default gen_random_uuid(),
+  plan_id       uuid not null references public.workout_plans(id) on delete cascade,
+  exercise_name text not null,
+  sets          int,
+  reps          text,
+  rest_sec      int,
+  notes         text,
+  sort_order    int default 0
+);
+
+-- שיוך תוכנית למתאמן
+create table if not exists public.plan_assignments (
+  id          uuid primary key default gen_random_uuid(),
+  plan_id     uuid not null references public.workout_plans(id) on delete cascade,
+  trainee_id  uuid not null references auth.users(id) on delete cascade,
+  assigned_at timestamptz default now(),
+  unique (plan_id, trainee_id)
+);
+
+-- לוג התקדמות
+create table if not exists public.progress_logs (
+  id            uuid primary key default gen_random_uuid(),
+  trainee_id    uuid not null references auth.users(id) on delete cascade,
+  exercise_name text not null,
+  log_date      date not null default current_date,
+  reps          int,
+  hold_sec      int,
+  weight_kg     numeric(5,2),
+  notes         text,
+  logged_by     uuid not null references auth.users(id),
+  created_at    timestamptz default now()
+);
+
+-- RLS: personal_sessions
+alter table public.personal_sessions enable row level security;
+create policy if not exists "ps_admin_all" on public.personal_sessions for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+create policy if not exists "ps_trainee_read" on public.personal_sessions for select to authenticated
+  using (trainee_id = auth.uid());
+
+-- RLS: workout_plans (כולם קוראים, רק אדמין כותב)
+alter table public.workout_plans enable row level security;
+create policy if not exists "plans_read_all" on public.workout_plans for select to authenticated using (true);
+create policy if not exists "plans_admin_write" on public.workout_plans for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+
+-- RLS: plan_exercises (כולם קוראים, רק אדמין כותב)
+alter table public.plan_exercises enable row level security;
+create policy if not exists "pe_read_all" on public.plan_exercises for select to authenticated using (true);
+create policy if not exists "pe_admin_write" on public.plan_exercises for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+
+-- RLS: plan_assignments
+alter table public.plan_assignments enable row level security;
+create policy if not exists "pa_trainee_read" on public.plan_assignments for select to authenticated
+  using (trainee_id = auth.uid());
+create policy if not exists "pa_admin_all" on public.plan_assignments for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+
+-- RLS: progress_logs
+alter table public.progress_logs enable row level security;
+create policy if not exists "prog_trainee_read" on public.progress_logs for select to authenticated
+  using (trainee_id = auth.uid());
+create policy if not exists "prog_admin_all" on public.progress_logs for all to authenticated
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin));
+```
