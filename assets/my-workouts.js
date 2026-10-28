@@ -27,7 +27,7 @@ async function renderMyWorkouts() {
 
   const { data: regs, error } = await sb
     .from('registrations')
-    .select('id, workout_id, credit_consumed, workouts(id, title, workout_date, start_time, duration_min, max_participants, notes)')
+    .select('id, workout_id, workouts(id, title, workout_date, start_time, duration_min, max_participants, notes)')
     .eq('user_id', currentUserId);
 
   if (error) {
@@ -38,7 +38,7 @@ async function renderMyWorkouts() {
 
   const items = (regs || [])
     .filter((r) => r.workouts)
-    .map((r) => ({ workout: r.workouts, creditConsumed: r.credit_consumed }));
+    .map((r) => ({ workout: r.workouts }));
 
   items.sort((a, b) => {
     const da = new Date(`${a.workout.workout_date}T${a.workout.start_time}`);
@@ -60,7 +60,7 @@ function renderList(container, items, isPast) {
   }
 
   container.innerHTML = '';
-  for (const { workout: w, creditConsumed } of items) {
+  for (const { workout: w } of items) {
     const card = document.createElement('div');
     card.className = 'workout-card registered' + (isPast ? ' past' : '');
     card.innerHTML = `
@@ -94,39 +94,9 @@ function renderList(container, items, isPast) {
       btn.textContent = cancelable ? 'בטל הרשמה' : 'נעול לביטול';
 
       btn.addEventListener('click', async () => {
-        if (!cancelable) {
-          await confirmDialog({
-            title: 'לא ניתן לבטל',
-            message: `לא ניתן לבטל הרשמה פחות מ-${CANCEL_DEADLINE_HOURS} שעות לפני האימון. ליצירת קשר עם המאמן/ת.`,
-            confirmText: 'הבנתי',
-            cancelText: '',
-          });
-          return;
-        }
-
-        const confirmed = await confirmDialog({
-          title: 'ביטול הרשמה',
-          message: `לבטל את ההרשמה ל"${w.title}"?`,
-          confirmText: 'בטל הרשמה',
-          danger: true,
-        });
-        if (!confirmed) return;
-
         btn.disabled = true;
-        const { error } = await sb
-          .from('registrations')
-          .delete()
-          .eq('workout_id', w.id)
-          .eq('user_id', currentUserId);
-
-        if (error) {
-          toast('שגיאה בביטול', 'error');
-          btn.disabled = false;
-          return;
-        }
-        if (creditConsumed) await refundEntry(currentUserId);
-        toast('ההרשמה בוטלה' + (creditConsumed ? ' • כניסה הוחזרה' : ''), 'success');
-        await renderMyWorkouts();
+        if (await cancelBookingFlow(w)) await renderMyWorkouts();
+        else btn.disabled = false;
       });
       actions.appendChild(btn);
     }

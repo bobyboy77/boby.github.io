@@ -58,6 +58,7 @@ let adminUserId;
   });
 
   await renderStats();
+  await renderExpiringMemberships();
   await renderPaymentRequests();
   await renderTraineesManagement();
   await renderTrialsList();
@@ -110,7 +111,7 @@ function adminSelectDialog({ title, options, confirmText = 'בחר' }) {
 async function getNonAdminTrainees() {
   const { data, error } = await sb
     .from('profiles')
-    .select('id, full_name, phone, is_admin, pt_sessions_total, pt_sessions_used, subscription_type, entries_remaining, subscription_expires_at')
+    .select('*')
     .or('is_trial.eq.false,is_trial.is.null')
     .order('full_name');
   if (error) console.error(error);
@@ -202,6 +203,11 @@ async function renderPaymentRequests() {
   }
 }
 
+async function refreshMemberships() {
+  await renderExpiringMemberships();
+  await renderTraineesManagement();
+}
+
 async function renderTraineesManagement() {
   const container = document.getElementById('traineesList');
   if (!container) return;
@@ -213,47 +219,325 @@ async function renderTraineesManagement() {
     return;
   }
 
+  const usage = await getMonthlyUsage(list.map((t) => t.id));
+
   container.innerHTML = '';
   for (const t of list) {
-    const isActive = subscriptionIsActive(t);
+    const state = membershipState(t);
+    const borderColor = state === 'frozen' ? '#d97706'
+      : (state === 'active' || subscriptionIsActive(t)) ? 'var(--success)'
+      : 'var(--danger)';
+    const lines = membershipStatusText(t, usage[t.id] || 0).split(' | ');
+    const frozenSet = !!t.frozen_from;
+
     const card = document.createElement('div');
     card.className = 'trial-card';
-    card.style.borderRight = isActive ? '3px solid var(--success)' : '3px solid var(--danger)';
+    card.style.borderRight = `3px solid ${borderColor}`;
     card.innerHTML = `
       <div class="trial-info">
         <div class="title">${escapeHtml(t.full_name || 'משתמש')}</div>
         <div class="meta">
           ${t.phone ? `<span>📞 <a href="tel:${escapeHtml(t.phone)}" style="color:inherit">${escapeHtml(t.phone)}</a></span>` : ''}
-          <span class="dim" style="font-size:12px">${escapeHtml(subscriptionStatusText(t))}</span>
         </div>
+        ${lines.map((l) => `<div class="meta" style="margin-top:4px;font-size:12px">${escapeHtml(l)}</div>`).join('')}
       </div>
       <div class="workout-actions">
         <button class="btn ghost small" data-act="edit">ערוך מנוי</button>
+        ${hasMonthlyPlan(t) ? `<button class="btn ghost small" data-act="freeze">${frozenSet ? 'בטל הקפאה' : 'הקפאה'}</button>` : ''}
       </div>
     `;
 
-    card.querySelector('[data-act="edit"]').addEventListener('click', async () => {
-      const result = await promptDialog({
-        title: `מנוי: ${t.full_name}`,
-        fields: [
-          { name: 'type', label: 'סוג מנוי (card_10 / single / none)', value: t.subscription_type || 'none' },
-          { name: 'entries', label: 'כניסות', type: 'number', value: t.entries_remaining || 0 },
-          { name: 'expires', label: 'תוקף (YYYY-MM-DD)', type: 'date', value: t.subscription_expires_at || '' },
-        ],
-      });
-      if (!result) return;
-      const { error } = await sb.from('profiles').update({
-        subscription_type: result.type || 'none',
-        entries_remaining: parseInt(result.entries) || 0,
-        subscription_expires_at: result.expires || null,
-      }).eq('id', t.id);
-      if (error) { toast('שגיאה', 'error'); return; }
-      toast('עודכן', 'success');
-      await renderTraineesManagement();
-    });
+    card.querySelector('[data-act="edit"]').addEventListener('click', () => editMembership(t));
+    card.querySelector('[data-act="freeze"]')?.addEventListener('click', () =>
+      frozenSet ? unfreezeMembership(t) : freezeMembership(t));
 
     container.appendChild(card);
   }
+}
+
+async function renderExpiringMemberships() {
+  const section = document.getElementById('expiringSection');
+  const container = document.getElementById('expiringList');
+  if (!section || !container) return;
+
+  const today = todayIso();
+  const from = addDaysIso(today, -7);
+  const to = addDaysIso(today, 14);
+  const list = (await getNonAdminTrainees())
+    .filter((t) => hasMonthlyPlan(t) && t.billing_type === 'fixed' && t.membership_end
+      && t.membership_end >= from && t.membership_end <= to)
+    .sort((a, b) => a.membership_end.localeCompare(b.membership_end));
+
+  if (!list.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  container.innerHTML = '';
+  for (const t of list) {
+    const ended = t.membership_end < today;
+    const card = document.createElement('div');
+    card.className = 'trial-card';
+    card.style.borderRight = `3px solid ${ended ? 'var(--danger)' : '#d97706'}`;
+    card.innerHTML = `
+      <div class="trial-info">
+        <div class="title">${escapeHtml(t.full_name || 'משתמש')}</div>
+        <div class="meta">
+          ${t.phone ? `<span>📞 <a href="tel:${escapeHtml(t.phone)}" style="color:inherit">${escapeHtml(t.phone)}</a></span>` : ''}
+          <span>${ended ? 'הסתיים ב-' : 'מסתיים ב-'}${formatShortDate(t.membership_end)}</span>
+        </div>
+      </div>
+      <div class="workout-actions">
+        <button class="btn small" data-act="renew">חידוש</button>
+      </div>
+    `;
+    card.querySelector('[data-act="renew"]').addEventListener('click', () => editMembership(t, { renew: true }));
+    container.appendChild(card);
+  }
+}
+
+function addDaysIso(iso, days) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return localIso(d);
+}
+
+// A 3-month plan from 1/11 ends on 31/1; clamps so 31/1 + 1 month doesn't overflow into March.
+function addMonthsIso(iso, months) {
+  const d = new Date(iso + 'T00:00:00');
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + months + 1, 0).getDate();
+  const target = new Date(d.getFullYear(), d.getMonth() + months, Math.min(d.getDate(), lastDay));
+  target.setDate(target.getDate() - 1);
+  return localIso(target);
+}
+
+function daysBetweenIso(fromIso, toIso) {
+  return Math.round((new Date(toIso + 'T00:00:00') - new Date(fromIso + 'T00:00:00')) / 86400000);
+}
+
+async function editMembership(t, { renew = false } = {}) {
+  const updates = await membershipDialog(t, { renew });
+  if (!updates) return;
+  const { error } = await sb.from('profiles').update(updates).eq('id', t.id);
+  if (error) { toast('שגיאה בשמירה', 'error'); console.error(error); return; }
+  toast('המנוי עודכן', 'success');
+  await refreshMemberships();
+}
+
+// Modal for editing a trainee's monthly membership + punch card.
+// Resolves to a profiles update object, or null when cancelled.
+function membershipDialog(t, { renew = false } = {}) {
+  return new Promise((resolve) => {
+    const root = ensureModalRoot();
+    const monthly = hasMonthlyPlan(t);
+    const planValue = !monthly ? 'none'
+      : t.monthly_entries == null ? 'unlimited'
+      : MONTHLY_PRESETS.includes(t.monthly_entries) ? String(t.monthly_entries)
+      : 'custom';
+    // Renewing a fixed plan starts the day after the old one ends
+    const startValue = renew && t.membership_end
+      ? addDaysIso(t.membership_end, 1)
+      : (t.membership_start || todayIso());
+    const endValue = renew ? '' : (t.membership_end || '');
+
+    const presetOptions = MONTHLY_PRESETS.map((n) => n == null
+      ? `<option value="unlimited">ללא הגבלה</option>`
+      : `<option value="${n}">${n} כניסות בחודש</option>`).join('');
+    const cardOptions = [['none', 'ללא'], ...Object.values(PRODUCTS).map((p) => [p.key, p.label])]
+      .map(([v, l]) => `<option value="${v}">${escapeModalHtml(l)}</option>`).join('');
+
+    root.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal-card" style="max-width:460px">
+          <h3>${renew ? 'חידוש מנוי' : 'מנוי'}: ${escapeModalHtml(t.full_name || '')}</h3>
+
+          <div class="modal-section-title">מנוי חודשי</div>
+          <div class="field">
+            <label>מסלול</label>
+            <select data-f="plan">
+              <option value="none">ללא מנוי חודשי</option>
+              ${presetOptions}
+              <option value="custom">מספר אחר…</option>
+            </select>
+          </div>
+          <div class="field" data-show="custom">
+            <label>כניסות בחודש</label>
+            <input type="number" min="1" max="60" data-f="custom" value="${planValue === 'custom' ? t.monthly_entries : ''}" />
+          </div>
+          <div data-show="monthly">
+            <div class="field">
+              <label>סוג חיוב</label>
+              <select data-f="billing">
+                <option value="standing_order">הוראת קבע (ללא תאריך סיום)</option>
+                <option value="fixed">מספר חודשים</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>תאריך התחלה</label>
+                <input type="date" data-f="start" value="${startValue}" />
+              </div>
+              <div class="field" data-show="fixed">
+                <label>מספר חודשים</label>
+                <input type="number" min="1" max="36" data-f="months" placeholder="למשל 3" />
+              </div>
+            </div>
+            <div class="field" data-show="fixed">
+              <label>תאריך סיום</label>
+              <input type="date" data-f="end" value="${endValue}" />
+            </div>
+          </div>
+
+          <div class="modal-section-title">כרטיסייה</div>
+          <div class="field">
+            <label>סוג</label>
+            <select data-f="cardType">${cardOptions}</select>
+          </div>
+          <div class="row" data-show="card">
+            <div class="field">
+              <label>כניסות</label>
+              <input type="number" min="0" data-f="cardEntries" value="${t.entries_remaining || 0}" />
+            </div>
+            <div class="field">
+              <label>תוקף</label>
+              <input type="date" data-f="cardExpires" value="${t.subscription_expires_at || ''}" />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn ghost" data-act="cancel">ביטול</button>
+            <button class="btn" data-act="ok">שמירה</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const f = (name) => root.querySelector(`[data-f="${name}"]`);
+    f('plan').value = planValue;
+    f('billing').value = renew ? 'fixed' : (t.billing_type || 'standing_order');
+    f('cardType').value = PRODUCTS[t.subscription_type] ? t.subscription_type : 'none';
+
+    const sync = () => {
+      const plan = f('plan').value;
+      const show = {
+        custom: plan === 'custom',
+        monthly: plan !== 'none',
+        fixed: plan !== 'none' && f('billing').value === 'fixed',
+        card: f('cardType').value !== 'none',
+      };
+      root.querySelectorAll('[data-show]').forEach((el) => {
+        el.style.display = show[el.dataset.show] ? '' : 'none';
+      });
+    };
+    const fillEnd = () => {
+      const months = parseInt(f('months').value);
+      if (months > 0 && f('start').value) f('end').value = addMonthsIso(f('start').value, months);
+    };
+    f('plan').addEventListener('change', sync);
+    f('billing').addEventListener('change', sync);
+    f('cardType').addEventListener('change', sync);
+    f('months').addEventListener('input', fillEnd);
+    f('start').addEventListener('change', fillEnd);
+    sync();
+
+    const close = (val) => { root.innerHTML = ''; resolve(val); };
+    root.querySelector('[data-act="cancel"]').addEventListener('click', () => close(null));
+    root.querySelector('.modal-backdrop').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) close(null);
+    });
+
+    root.querySelector('[data-act="ok"]').addEventListener('click', () => {
+      const plan = f('plan').value;
+      const updates = {};
+
+      if (plan === 'none') {
+        Object.assign(updates, {
+          monthly_plan: 'none', monthly_entries: null, billing_type: null,
+          membership_start: null, membership_end: null, frozen_from: null, frozen_until: null,
+        });
+      } else {
+        const entries = plan === 'unlimited' ? null
+          : plan === 'custom' ? parseInt(f('custom').value)
+          : parseInt(plan);
+        if (plan === 'custom' && !(entries > 0)) { toast('הזן/י מספר כניסות בחודש', 'error'); return; }
+        const billing = f('billing').value;
+        const start = f('start').value || todayIso();
+        const end = billing === 'fixed' ? f('end').value : null;
+        if (billing === 'fixed' && !end) { toast('הזן/י מספר חודשים או תאריך סיום', 'error'); return; }
+        if (end && end < start) { toast('תאריך הסיום לפני תאריך ההתחלה', 'error'); return; }
+        Object.assign(updates, {
+          monthly_plan: 'monthly', monthly_entries: entries, billing_type: billing,
+          membership_start: start, membership_end: end,
+        });
+        if (renew) Object.assign(updates, { frozen_from: null, frozen_until: null });
+      }
+
+      const cardType = f('cardType').value;
+      Object.assign(updates, cardType === 'none'
+        ? { subscription_type: 'none', entries_remaining: 0, subscription_expires_at: null }
+        : {
+          subscription_type: cardType,
+          entries_remaining: parseInt(f('cardEntries').value) || 0,
+          subscription_expires_at: f('cardExpires').value || null,
+        });
+
+      close(updates);
+    });
+  });
+}
+
+async function freezeMembership(t) {
+  const fixed = t.billing_type === 'fixed' && t.membership_end;
+  const result = await promptDialog({
+    title: `הקפאת מנוי: ${t.full_name}`,
+    fields: [
+      { name: 'from', label: 'מתאריך', type: 'date', value: todayIso() },
+      { name: 'until', label: 'עד תאריך (כולל)', type: 'date', value: addDaysIso(todayIso(), 13) },
+    ],
+    confirmText: 'הקפא',
+  });
+  if (!result) return;
+  if (!result.from || !result.until || result.until < result.from) {
+    toast('טווח תאריכים לא תקין', 'error');
+    return;
+  }
+
+  const updates = { frozen_from: result.from, frozen_until: result.until };
+  const days = daysBetweenIso(result.from, result.until) + 1;
+  // A fixed-term membership is extended by the frozen days
+  if (fixed) updates.membership_end = addDaysIso(t.membership_end, days);
+
+  const { error } = await sb.from('profiles').update(updates).eq('id', t.id);
+  if (error) { toast('שגיאה בהקפאה', 'error'); console.error(error); return; }
+  toast(fixed
+    ? `המנוי הוקפא ל-${days} ימים • תאריך הסיום הוארך ל-${formatShortDate(updates.membership_end)}`
+    : `המנוי הוקפא ל-${days} ימים`, 'success');
+  await refreshMemberships();
+}
+
+async function unfreezeMembership(t) {
+  const today = todayIso();
+  const fixed = t.billing_type === 'fixed' && t.membership_end;
+  // Frozen days that haven't happened yet are taken back off the end date
+  const unusedFrom = t.frozen_from > today ? t.frozen_from : addDaysIso(today, 1);
+  const unusedDays = t.frozen_until && t.frozen_until >= unusedFrom
+    ? daysBetweenIso(unusedFrom, t.frozen_until) + 1
+    : 0;
+
+  const confirmed = await confirmDialog({
+    title: 'ביטול הקפאה',
+    message: fixed && unusedDays
+      ? `לבטל את ההקפאה של ${t.full_name}? תאריך הסיום יוקדם ב-${unusedDays} ימים שלא נוצלו.`
+      : `לבטל את ההקפאה של ${t.full_name}?`,
+    confirmText: 'בטל הקפאה',
+  });
+  if (!confirmed) return;
+
+  const updates = { frozen_from: null, frozen_until: null };
+  if (fixed && unusedDays) updates.membership_end = addDaysIso(t.membership_end, -unusedDays);
+
+  const { error } = await sb.from('profiles').update(updates).eq('id', t.id);
+  if (error) { toast('שגיאה', 'error'); console.error(error); return; }
+  toast('ההקפאה בוטלה', 'success');
+  await refreshMemberships();
 }
 
 async function renderStats() {

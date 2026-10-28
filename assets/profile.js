@@ -22,10 +22,12 @@
 
   const subBox = document.getElementById('subBox');
   if (subBox) {
+    const used = (await getMonthlyUsage([userId]))[userId] || 0;
+    const lines = membershipStatusText(profile, used).split(' | ');
     subBox.innerHTML = `
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:4px">מנוי</div>
-      <div style="font-size:15px;font-weight:600;margin-bottom:12px">${subscriptionStatusText(profile)}</div>
-      <a href="pricing.html" class="btn small ghost">רכישת כניסות</a>
+      ${lines.map((l) => `<div style="font-size:15px;font-weight:600;margin-bottom:6px">${escapeModalHtml(l)}</div>`).join('')}
+      <a href="pricing.html" class="btn small ghost" style="margin-top:6px">רכישת כרטיסייה / שיעור בודד</a>
     `;
   }
 

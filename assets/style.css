@@ -1072,3 +1072,34 @@ input:focus, select:focus, textarea:focus {
   .pt-stat { border-left: none; border-bottom: 1px solid var(--border); }
   .pt-stat:last-child { border-bottom: none; }
 }
+
+/* ===== Monthly membership ===== */
+.quota-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-right: 3px solid var(--text);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.quota-banner strong { color: var(--text); font-size: 16px; }
+.quota-banner a { color: var(--text); text-decoration: underline; }
+
+.modal-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-section-title:first-of-type { margin-top: 4px; }
+
+.modal-card .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}

@@ -16,8 +16,9 @@
     logout();
   });
 
+  const used = (await getMonthlyUsage([userId]))[userId] || 0;
   document.getElementById('subStatus').textContent =
-    'המנוי הנוכחי שלך: ' + subscriptionStatusText(profile);
+    'המנוי הנוכחי שלך: ' + membershipStatusText(profile, used);
 
   const list = document.getElementById('productsList');
   list.innerHTML = '';
