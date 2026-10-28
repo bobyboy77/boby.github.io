@@ -38,7 +38,78 @@ async function refresh() {
   const { start, end } = weekRange(currentOffset);
   document.getElementById('weekRange').textContent =
     `${formatDate(start)} – ${formatDate(end)}`;
-  await renderCalendar(currentUserId, start, end);
+  await Promise.all([
+    renderQuotaBanner(),
+    renderCalendar(currentUserId, start, end),
+  ]);
+}
+
+async function renderQuotaBanner() {
+  const banner = document.getElementById('quotaBanner');
+  if (!banner) return;
+  const p = currentProfile;
+  if (!p || p.is_admin) { banner.style.display = 'none'; return; }
+
+  const monthName = MONTH_NAMES[new Date().getMonth()];
+  const parts = [];
+
+  if (hasMonthlyPlan(p)) {
+    const state = membershipState(p);
+    if (state === 'frozen') {
+      parts.push(`המנוי מוקפא${p.frozen_until ? ' עד ' + formatShortDate(p.frozen_until) : ''}`);
+    } else if (state === 'ended') {
+      parts.push(`המנוי הסתיים ב-${formatShortDate(p.membership_end)} • לחידוש פנה/י למאמן`);
+    } else if (state === 'future') {
+      parts.push(`המנוי מתחיל ב-${formatShortDate(p.membership_start)}`);
+    } else {
+      const used = (await getMonthlyUsage([p.id]))[p.id] || 0;
+      parts.push(p.monthly_entries == null
+        ? `מנוי ללא הגבלה • נוצלו ${used} כניסות ב${monthName}`
+        : `נשארו לך <strong>${Math.max(0, p.monthly_entries - used)}</strong> מתוך ${p.monthly_entries} כניסות ב${monthName}`);
+    }
+  }
+  if (subscriptionIsActive(p)) {
+    parts.push(`בכרטיסייה: ${p.entries_remaining} כניסות`);
+  }
+
+  banner.innerHTML = parts.length
+    ? parts.join(' • ')
+    : 'אין מנוי פעיל • <a href="pricing.html">לרכישה</a>';
+  banner.style.display = '';
+}
+
+// Shows the right message for a book_workout status. Returns true when booked.
+async function handleBookingStatus(status, workout) {
+  if (status === 'ok') { toast('נרשמת בהצלחה!', 'success'); return true; }
+  if (status === 'ok_card') { toast('נרשמת! ירדה כניסה מהכרטיסייה', 'success'); return true; }
+  if (status === 'already') { toast('כבר נרשמת לאימון הזה', 'error'); return true; }
+  if (status === 'full') { toast('האימון מלא', 'error'); return true; }
+  if (status === 'past') { toast('האימון כבר התחיל', 'error'); return true; }
+
+  const offerSingle = async (title, message) => {
+    const go = await confirmDialog({ title, message, confirmText: 'רכישת שיעור בודד', cancelText: 'סגירה' });
+    if (go) window.location.href = 'pricing.html';
+  };
+
+  const monthName = MONTH_NAMES[new Date(workout.workout_date + 'T00:00:00').getMonth()];
+  if (status === 'quota_reached') {
+    await offerSingle('ניצלת את כל הכניסות',
+      `ניצלת את כל ${currentProfile.monthly_entries} הכניסות של ${monthName}. אפשר לרכוש שיעור בודד כדי להגיע בכל זאת.`);
+  } else if (status === 'frozen') {
+    await confirmDialog({
+      title: 'המנוי מוקפא',
+      message: 'המנוי שלך מוקפא בתאריך של האימון. לשינוי פנה/י למאמן.',
+      confirmText: 'הבנתי',
+      cancelText: '',
+    });
+  } else if (status === 'outside_membership') {
+    await offerSingle('מחוץ לתקופת המנוי', 'האימון לא בתוך תקופת המנוי שלך. לחידוש פנה/י למאמן, או רכוש/י שיעור בודד.');
+  } else if (status === 'no_membership') {
+    await offerSingle('אין מנוי פעיל', 'אין לך מנוי פעיל או כניסות בכרטיסייה.');
+  } else {
+    toast('שגיאה בהרשמה', 'error');
+  }
+  return false;
 }
 
 function buildWeekDates(startIso) {
@@ -194,95 +265,14 @@ function renderMiniCard(w, userId, countMap, myRegs) {
 
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
-
-    if (isRegistered && !canCancel(w)) {
-      await confirmDialog({
-        title: 'לא ניתן לבטל',
-        message: `לא ניתן לבטל הרשמה פחות מ-${CANCEL_DEADLINE_HOURS} שעות לפני האימון. ליצירת קשר עם המאמן/ת.`,
-        confirmText: 'הבנתי',
-        cancelText: '',
-      });
-      return;
-    }
-
-    if (!isRegistered && !past && !isFull && !isAdmin) {
-      // Check subscription before registering (admin bypasses check)
-      if (!subscriptionIsActive(currentProfile)) {
-        const goToPricing = await confirmDialog({
-          title: 'אין כניסות פעילות',
-          message: 'הכרטיסייה שלך פגה או שאין כניסות. רוצה לרכוש כניסות חדשות?',
-          confirmText: 'רכישה',
-          cancelText: 'לא עכשיו',
-        });
-        if (goToPricing) window.location.href = 'pricing.html';
-        return;
-      }
-    }
-
     btn.disabled = true;
-    if (isRegistered) {
-      const confirmed = await confirmDialog({
-        title: 'ביטול הרשמה',
-        message: `לבטל את ההרשמה ל"${w.title}"?`,
-        confirmText: 'בטל הרשמה',
-        danger: true,
-      });
-      if (!confirmed) { btn.disabled = false; return; }
 
-      // Look up the registration row to see if a credit was consumed
-      const { data: regRow } = await sb
-        .from('registrations')
-        .select('credit_consumed')
-        .eq('workout_id', w.id)
-        .eq('user_id', userId)
-        .maybeSingle();
+    const changed = isRegistered
+      ? await cancelBookingFlow(w)
+      : await handleBookingStatus(await bookWorkout(w.id), w);
 
-      const { error } = await sb
-        .from('registrations')
-        .delete()
-        .eq('workout_id', w.id)
-        .eq('user_id', userId);
-      if (error) {
-        toast('שגיאה בביטול ההרשמה', 'error');
-        btn.disabled = false;
-        return;
-      }
-
-      if (regRow?.credit_consumed) {
-        await refundEntry(userId);
-      }
-      toast('ההרשמה בוטלה' + (regRow?.credit_consumed ? ' • כניסה הוחזרה' : ''), 'success');
-    } else {
-      // Try to consume an entry (admin bypasses)
-      let creditConsumed = false;
-      if (!isAdmin) {
-        const ok = await consumeEntry(userId);
-        if (!ok) {
-          const goToPricing = await confirmDialog({
-            title: 'לא ניתן להירשם',
-            message: 'אין כניסות בכרטיסייה. רוצה לרכוש?',
-            confirmText: 'רכישה',
-            cancelText: 'לא עכשיו',
-          });
-          btn.disabled = false;
-          if (goToPricing) window.location.href = 'pricing.html';
-          return;
-        }
-        creditConsumed = true;
-      }
-
-      const { error } = await sb
-        .from('registrations')
-        .insert({ workout_id: w.id, user_id: userId, credit_consumed: creditConsumed });
-      if (error) {
-        toast('שגיאה בהרשמה', 'error');
-        if (creditConsumed) await refundEntry(userId);
-        btn.disabled = false;
-        return;
-      }
-      toast('נרשמת בהצלחה!', 'success');
-    }
-    await refresh();
+    if (changed) await refresh();
+    else btn.disabled = false;
   });
 
   actions.appendChild(btn);

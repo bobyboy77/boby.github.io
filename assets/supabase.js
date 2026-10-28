@@ -121,15 +121,128 @@ function subscriptionIsActive(profile) {
   return true;
 }
 
-async function consumeEntry(userId) {
-  const { data, error } = await sb.rpc('consume_entry', { p_user: userId });
-  if (error) { console.error('consume_entry', error); return false; }
-  return !!data;
+// ===== Monthly membership =====
+// Quota resets on the 1st of every calendar month. Usage is counted from
+// registrations with credit_source = 'monthly' in the workout's month.
+const MONTHLY_PRESETS = [4, 8, 12, null]; // null = unlimited
+const MONTH_NAMES = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+
+function localIso(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-async function refundEntry(userId) {
-  const { error } = await sb.rpc('refund_entry', { p_user: userId });
-  if (error) console.error('refund_entry', error);
+function todayIso() {
+  return localIso(new Date());
+}
+
+function formatShortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+
+function monthBounds(date = new Date()) {
+  return {
+    start: localIso(new Date(date.getFullYear(), date.getMonth(), 1)),
+    next: localIso(new Date(date.getFullYear(), date.getMonth() + 1, 1)),
+  };
+}
+
+function hasMonthlyPlan(profile) {
+  return profile?.monthly_plan === 'monthly';
+}
+
+function isFrozenOn(profile, iso) {
+  if (!profile?.frozen_from || iso < profile.frozen_from) return false;
+  return !profile.frozen_until || iso <= profile.frozen_until;
+}
+
+// 'active' | 'frozen' | 'ended' | 'future' | 'none'
+function membershipState(profile, iso = todayIso()) {
+  if (!hasMonthlyPlan(profile)) return 'none';
+  if (profile.membership_end && iso > profile.membership_end) return 'ended';
+  if (profile.membership_start && iso < profile.membership_start) return 'future';
+  if (isFrozenOn(profile, iso)) return 'frozen';
+  return 'active';
+}
+
+// used = entries used this month; pass null to omit the usage part.
+function membershipStatusText(profile, used = null) {
+  const parts = [];
+  if (hasMonthlyPlan(profile)) {
+    const unlimited = profile.monthly_entries == null;
+    let text = `מנוי חודשי • ${unlimited ? 'ללא הגבלה' : `${profile.monthly_entries} כניסות בחודש`}`;
+    if (used !== null) {
+      text += unlimited
+        ? ` • נוצלו ${used} החודש`
+        : ` • נוצלו ${used} החודש (נשארו ${Math.max(0, profile.monthly_entries - used)})`;
+    }
+    text += profile.billing_type === 'fixed' && profile.membership_end
+      ? ` • עד ${formatShortDate(profile.membership_end)}`
+      : ' • הוראת קבע';
+    const state = membershipState(profile);
+    if (state === 'frozen') text += ` • מוקפא${profile.frozen_until ? ' עד ' + formatShortDate(profile.frozen_until) : ''}`;
+    if (state === 'ended') text += ' • המנוי הסתיים';
+    if (state === 'future') text += ` • מתחיל ב-${formatShortDate(profile.membership_start)}`;
+    parts.push(text);
+  }
+  if (profile?.subscription_type && profile.subscription_type !== 'none') {
+    parts.push(subscriptionStatusText(profile));
+  }
+  return parts.length ? parts.join(' | ') : 'אין מנוי פעיל';
+}
+
+// Returns { [userId]: entriesUsed } for the calendar month of `date`.
+async function getMonthlyUsage(userIds, date = new Date()) {
+  const usage = {};
+  if (!userIds.length) return usage;
+  const { start, next } = monthBounds(date);
+  const { data, error } = await sb
+    .from('registrations')
+    .select('user_id, workouts!inner(workout_date)')
+    .eq('credit_source', 'monthly')
+    .in('user_id', userIds)
+    .gte('workouts.workout_date', start)
+    .lt('workouts.workout_date', next);
+  if (error) { console.error('getMonthlyUsage', error); return usage; }
+  for (const r of data || []) usage[r.user_id] = (usage[r.user_id] || 0) + 1;
+  return usage;
+}
+
+// Server-side booking: checks capacity, monthly quota, freeze and punch card.
+// Returns a status string (see book_workout in SETUP.md section 9).
+async function bookWorkout(workoutId) {
+  const { data, error } = await sb.rpc('book_workout', { p_workout: workoutId });
+  if (error) { console.error('book_workout', error); return 'error'; }
+  return data;
+}
+
+// Confirms with the user, cancels via RPC (12h rule enforced on the server).
+// Returns true if the registration was removed.
+async function cancelBookingFlow(workout) {
+  const lockedDialog = () => confirmDialog({
+    title: 'לא ניתן לבטל',
+    message: `לא ניתן לבטל הרשמה פחות מ-${CANCEL_DEADLINE_HOURS} שעות לפני האימון. ליצירת קשר עם המאמן/ת.`,
+    confirmText: 'הבנתי',
+    cancelText: '',
+  });
+
+  if (!canCancel(workout)) { await lockedDialog(); return false; }
+
+  const confirmed = await confirmDialog({
+    title: 'ביטול הרשמה',
+    message: `לבטל את ההרשמה ל"${workout.title}"?`,
+    confirmText: 'בטל הרשמה',
+    danger: true,
+  });
+  if (!confirmed) return false;
+
+  const { data, error } = await sb.rpc('cancel_booking', { p_workout: workout.id });
+  if (error) { toast('שגיאה בביטול ההרשמה', 'error'); console.error(error); return false; }
+  if (data === 'too_late') { await lockedDialog(); return false; }
+  if (data === 'not_registered') { toast('ההרשמה כבר לא קיימת', 'error'); return true; }
+  toast(data === 'ok_refunded' ? 'ההרשמה בוטלה • כניסה הוחזרה לכרטיסייה' : 'ההרשמה בוטלה', 'success');
+  return true;
 }
 
 function workoutDateTime(workout) {
@@ -371,7 +484,7 @@ async function showWorkoutDetails(workout, options = {}) {
     const userIds = regs.map((r) => r.user_id);
     const { data: profiles, error: profilesError } = await sb
       .from('profiles')
-      .select('id, full_name, phone, is_trial, subscription_type, entries_remaining')
+      .select('id, full_name, phone, is_trial, subscription_type, entries_remaining, subscription_expires_at, monthly_plan, monthly_entries, billing_type, membership_start, membership_end, frozen_from, frozen_until')
       .in('id', userIds);
     if (profilesError) console.error('showWorkoutDetails: failed to fetch profiles', profilesError);
     for (const p of profiles || []) profilesMap[p.id] = p;
@@ -391,8 +504,8 @@ async function showWorkoutDetails(workout, options = {}) {
       const name = escapeModalHtml(pr.full_name || 'משתמש');
       const phone = pr.phone ? `<a href="tel:${escapeModalHtml(pr.phone)}" style="color:inherit;text-decoration:underline">${escapeModalHtml(pr.phone)}</a>` : '';
       const trial = pr.is_trial ? '<span class="trial-badge">🆕 טריאל</span>' : '';
-      const sub = pr.subscription_type && pr.subscription_type !== 'none'
-        ? `<span class="dim" style="font-size:11px">${escapeModalHtml(PRODUCTS[pr.subscription_type]?.label || pr.subscription_type)} • ${pr.entries_remaining ?? 0} כניסות</span>`
+      const sub = !pr.is_trial
+        ? `<span class="dim" style="font-size:11px">${escapeModalHtml(membershipStatusText(pr))}</span>`
         : '';
       const attended = p.attendance === 'attended';
       const noShow = p.attendance === 'no_show';
