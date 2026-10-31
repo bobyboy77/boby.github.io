@@ -324,7 +324,7 @@
     pick(true, `<b>שבוע 1:</b> לך ל${firstVenue ? firstVenue.n : 'ספרייה הקרובה'}. לא כדי "להתחיל" — רק כדי להיות שם, פעמיים בשבוע. היכרות מתחילה בנוכחות קבועה.`);
     pick(true, `<b>שבוע 2:</b> תירשם לחוג אחד מהרשימה למעלה. התחייבות ל-8 מפגשים. בפגישה השלישית כבר מותר להציע קפה אחרי.`);
     pick(p.initiative === 'never' || p.initiative === 'rare', `<b>כל שבוע:</b> פנייה אחת לפחות. משפט פשוט, שאלה על משהו שקורה עכשיו, חיוך. אם היא לא מעוניינת — "יום נעים" ולהמשיך. זה הכול.`);
-    pick(p.fitness === 'couch' || p.fitness === 'some', `<b>כושר:</b> 3 אימונים בשבוע. זה משפר את איך שאתה נראה, אבל בעיקר את איך שאתה מרגיש — וזה מה שהיא רואה. <a href="../landing.html">(יש פה באתר מאמן, אגב 😉)</a>`);
+    pick(p.fitness === 'couch' || p.fitness === 'some', `<b>כושר:</b> 3 אימונים בשבוע. זה משפר את איך שאתה נראה, אבל בעיקר את איך שאתה מרגיש — וזה מה שהיא רואה. ${/github\.io$/.test(location.hostname) ? '<a href="../landing.html">(יש פה באתר מאמן, אגב 😉)</a>' : ''}`);
     pick(p.social === 'shy', `<b>ביטחון:</b> סדנת אימפרוב או סטנדאפ למתחילים. הדרך הכי מהירה להפסיק לפחד ממבוכה היא להתאמן בה.`);
     pick(p.smoke === 'yes', `<b>עישון:</b> כ-87% מהנשים בישראל לא מעשנות, והרבה מהן מסננות מעשנים. זה הצעד עם התשואה הכי גבוהה ברשימה.`);
     pick(p.housing === 'parents' && p.age >= 28, `<b>מגורים:</b> לא חייבים לקנות דירה — אבל "תבואי אליי, רק תגידי שלום לאמא" זה לא משפט מנצח.`);
@@ -586,8 +586,20 @@
     document.getElementById('share').onclick = () => {
       const txt = `הלב"ס קבע: ${v.badge} ${v.emoji}\nהציון שלי: ${self} | הדרישות שלי: ${demand}\nבישראל יש ~${fmtSmart(f.mutual)} נשים שמתאימות לי הדדית.\nהמקום הכי טוב בשבילי: ${top[0] ? top[0].city.name : '—'}\nתבדקו את עצמכם: ${location.href}`;
       const done = () => toast('הועתק! עכשיו תשלח לחבר שגם הוא נדחה ביום שישי');
-      if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => prompt('העתק:', txt));
-      else prompt('העתק:', txt);
+      const fallback = () => {
+        let box = document.getElementById('shareBox');
+        if (!box) {
+          box = document.createElement('textarea');
+          box.id = 'shareBox'; box.className = 'sharebox'; box.readOnly = true;
+          document.getElementById('share').closest('.nav').after(box);
+        }
+        box.value = txt; box.focus(); box.select();
+        toast('סמן והעתק את הטקסט שמתחת לכפתורים');
+      };
+      try {
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, fallback);
+        else fallback();
+      } catch (e) { fallback(); }
     };
   }
 
